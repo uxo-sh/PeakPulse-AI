@@ -1,6 +1,6 @@
-import steam_api
+from steam_api import SteamCollector
 
-collector = steam_api.SteamCollector()
+collector = SteamCollector()
 print("=== Téléchargement du dump communautaire ===")
 collector.download_community_app_list()
 
