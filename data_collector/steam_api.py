@@ -119,7 +119,8 @@ class SteamCollector:
                     "genres": [g.get("description", "") for g in details.get("genres", [])],
                     "tags": list(details.get("tags", {}).keys()) if "tags" in details else [],
                     "release_date": details.get("release_date", {}).get("date", ""),
-                    "collected_at": datetime.now().isoformat()
+                    "collected_at": datetime.now().isoformat(),
+                    "current_players": self.get_current_players(appid)
                 }
                 results.append(entry)
             time.sleep(1.2)  # prudent pour éviter ban IP temporaire
@@ -131,3 +132,14 @@ class SteamCollector:
             print(f"✅ {len(df)} jeux détaillés sauvés dans {filename}")
             return df
         return None
+    def get_current_players(self, appid: int):
+        url = "https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/"
+        params = {"appid": appid}
+        try:
+            r = self.session.get(url, params=params, timeout=8)
+            if r.status_code == 200:
+                data = r.json()
+                return data["response"].get("player_count", 0)
+        except:
+            pass
+        return 0  # ou None
