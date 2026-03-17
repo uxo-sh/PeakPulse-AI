@@ -1,0 +1,8 @@
+from steam_api import SteamCollector
+
+collector = SteamCollector()
+print("=== Téléchargement du dump communautaire ===")
+collector.download_community_app_list()
+
+print("\n=== Collecte détails sur 30 jeux ===")
+collector.collect_sample_games(limit=30)
