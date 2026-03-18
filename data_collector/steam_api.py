@@ -18,15 +18,22 @@ class SteamCollector:
         - https://github.com/SteamTools-Team/GameList
         """
         # Choix 1 : jsnli (recommandé - structure apps + catégories)
-        #url = "https://raw.githubusercontent.com/jsnli/steamappidlist/master/data/apps.json"
+        url = "https://raw.githubusercontent.com/jsnli/steamappidlist/master/data/games_appid.json"
     
         # Choix 2 alternatif si le premier change de structure :
-        url = "https://raw.githubusercontent.com/SteamTools-Team/GameList/main/games.json"
+        url = "https://raw.githubusercontent.com/jsnli/steamappidlist/master/data/games_appid.json"
     
         try:
-            r = self.session.get(url, timeout=15)
-            r.raise_for_status()
-        
+            max_attempts = 3
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    r = self.session.get(url, timeout=15)
+                    r.raise_for_status()
+                    break
+                except Exception as e:
+                    if attempt == max_attempts:
+                        raise
+                    time.sleep(2 ** attempt)
             data = r.json()
         
             # Selon le repo, la clé peut varier :
@@ -52,15 +59,25 @@ class SteamCollector:
         
             df = df[df["name"].str.strip() != ""]  # nettoie
             df = df.drop_duplicates(subset=["appid"])
-        
+            df = df[df['name'].str.len() > 3]
+            df = df[~df['name'].str.contains(r'(?:DLC|Soundtrack|Demo|Trailer|Editor|SDK|Server|Mod|Beta|Test)', case=False, na=False)]
+            df = df[df['name'].str.len() > 3]
+            df = df[~df['name'].str.contains(r'(?:DLC|Soundtrack|Demo|Trailer|Editor|SDK|Server|Mod|Beta|Test)', case=False, na=False)]
+
             os.makedirs("raw", exist_ok=True)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M")
             filename = f"raw/steam_app_list_{timestamp}.json"
+            latest_json = "raw/steam_app_list_latest.json"
+            latest_csv = "raw/steam_app_list_latest.csv"
+
             df.to_json(filename, orient="records", indent=2)
             df.to_csv(filename.replace(".json", ".csv"), index=False)
-        
+            # Keep a copy as "latest" for fast re-use by collect_sample_games
+            df.to_json(latest_json, orient="records", indent=2)
+            df.to_csv(latest_csv, index=False)
+
             print(f"✅ Téléchargé {len(df):,} apps depuis dump communautaire")
-            print(f"Fichiers sauvés : {filename} + .csv")
+            print(f"Fichiers sauvés : {filename} + .csv (et mis à jour {latest_json}/csv)")
             return df
     
         except Exception as e:
@@ -82,7 +99,7 @@ class SteamCollector:
         except:
             return None
 
-    def collect_sample_games(self, limit=100):
+    def collect_sample_games(self, limit=200):
         """Collecte détails pour un échantillon basé sur le dump communautaire"""
     
         # Si pas encore de liste locale, on la télécharge
@@ -102,37 +119,46 @@ class SteamCollector:
                 if df_apps is None:
                     return None
     
-        # Prends un échantillon (head, sample random, ou filtre plus tard)
-        #sample = df_apps.head(limit)          # ou df_apps.sample(limit)
-        #sample = df_apps.sample(n=limit, random_state=42)  # random 100 jeux
-        sample = df_apps[df_apps['name'].str.contains('2025|2026', na=False)].head(limit)  # jeux récents
-        if 'type' in df_apps.columns:
-            sample = sample[sample['type'] == 'game']  # ou 'Game', vérifie la casse
+        
+        # Prioriser les jeux récents ou avec nom qui ressemble à un titre récent
+        recent_mask = df_apps['name'].str.contains(r'202[4-6]', case=False, na=False)
+        if recent_mask.sum() >= limit:
+            sample = df_apps[recent_mask].sample(n=limit, random_state=42)
+        else:
+            # Si pas assez de récents, complète avec random
+            sample = df_apps.sample(n=limit, random_state=42)
         results = []
+        success_count = 0
+            
         for _, row in sample.iterrows():
-            appid = row["appid"]
+            appid = int(row["appid"])
             details = self.get_app_details(appid)
+            players = self.get_current_players(appid)
+
+            print(f"appid {appid:8d} → details: {'OK' if details else 'ÉCHEC'} | joueurs: {players}")
             if details:
+                success_count += 1
                 entry = {
                     "appid": appid,
                     "name": details.get("name", ""),
                     "genres": [g.get("description", "") for g in details.get("genres", [])],
                     "tags": list(details.get("tags", {}).keys()) if "tags" in details else [],
                     "release_date": details.get("release_date", {}).get("date", ""),
-                    "collected_at": datetime.now().isoformat(),
-                    "current_players": self.get_current_players(appid)
+                    "current_players": players,
+                    "collected_at": datetime.now().isoformat()
                 }
                 results.append(entry)
-            time.sleep(1.2)  # prudent pour éviter ban IP temporaire
-
+            time.sleep(2.0)
+        print(f"\nRésumé collecte : {success_count}/{len(sample)} succès ({success_count/len(sample)*100:.1f}%)")
         if results:
             df = pd.DataFrame(results)
-            filename = f"raw/steam_sample_details_{datetime.now():%Y%m%d}.csv"
+            filename = f"raw/steam_sample_details_{datetime.now():%Y%m%d_%H%M}.csv"
             df.to_csv(filename, index=False)
             print(f"✅ {len(df)} jeux détaillés sauvés dans {filename}")
             return df
         return None
-    def get_current_players(self, appid: int):
+    
+    def get_current_players(self, appid: int) -> int:
         url = "https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/"
         params = {"appid": appid}
         try:
@@ -142,4 +168,4 @@ class SteamCollector:
                 return data["response"].get("player_count", 0)
         except:
             pass
-        return 0  # ou None
+        return 0
