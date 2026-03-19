@@ -1,3 +1,7 @@
+# NOTE : Ce module est en mode "legacy" pour l'instant.
+# On utilise le dataset statique Kaggle (games.csv etc.) pour le MVP.
+# On réactivera la collecte temps réel plus tard.
+
 import os
 import requests
 import pandas as pd
@@ -120,13 +124,8 @@ class SteamCollector:
                     return None
     
         
-        # Prioriser les jeux récents ou avec nom qui ressemble à un titre récent
-        recent_mask = df_apps['name'].str.contains(r'202[4-6]', case=False, na=False)
-        if recent_mask.sum() >= limit:
-            sample = df_apps[recent_mask].sample(n=limit, random_state=42)
-        else:
-            # Si pas assez de récents, complète avec random
-            sample = df_apps.sample(n=limit, random_state=42)
+        # Échantillonnage aléatoire pour inclure des jeux populaires avec joueurs
+        sample = df_apps.sample(n=limit, random_state=42)
         results = []
         success_count = 0
             
