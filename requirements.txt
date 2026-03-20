@@ -4,3 +4,5 @@ python-dotenv
 beautifulsoup4
 lxml
 python-dateutil
+scikit-learn
+numpy
