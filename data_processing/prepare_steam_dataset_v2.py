@@ -95,7 +95,7 @@ df["price"] = clean_numeric_column(df["price"], fill_value=0)
 
 # ========== 7. CALCULS SIMPLES DE PRÉTRAITEMENT ==========
 print("7. Calculs de prétraitement...")
-df["is_free"] = (df["price"] == 0).astype(int)
+# La ligne df["is_free"] a été supprimée ici
 df["name_length"] = df["name"].str.len()
 df["has_hltb"] = df["hltb_single"].notna().astype(int)
 df["review_count"] = df["total_reviews"]
@@ -105,13 +105,14 @@ print("8. Sélection des colonnes finales...")
 
 tag_flags = [f'has_{t.lower().replace(" ", "_").replace("-", "_")}' for t in popular_tags]
 
+# La colonne "is_free" a été retirée de la liste ci-dessous
 final_cols = [
     "app_id", "name", "release_date", "price", "owners", "positive", "negative",
     "score_ratio", "days_since_release",
     "tag_density", "tag_entropy", "num_popular_tags",
 ] + tag_flags + [
     "is_multiplayer", "is_coop", "is_vr", "is_controller",
-    "is_free", "name_length", "has_hltb", "review_count"
+    "name_length", "has_hltb", "review_count"
 ]
 
 df_final = df[final_cols].dropna(subset=["name", "release_date"])
