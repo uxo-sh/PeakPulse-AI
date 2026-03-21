@@ -5,8 +5,12 @@ from sklearn.ensemble import RandomForestClassifier
 from trend_engine.trend_detector import FeatureEngineeringGames
 from data_processing.preprocessor import preprocessor
 
+movies_df, steam_df = preprocessor()
+
+# Tu choisis TON dataset
+df = steam_df  # jeux uniquement
 pipeline = Pipeline(steps=[
     ("feature_engeneering",FeatureEngineeringGames()), # ilay resaka mijery tendance mihitsy
-    ("preprocessing",preprocessor), # nom an'ilay preprocessing ataonlisany any 
+    #("preprocessing",preprocessor()), # nom an'ilay preprocessing ataonlisany any 
     ("model",RandomForestClassifier(n_estimators = 100 , max_depth =None,random_state=42))
 ])

@@ -20,6 +20,7 @@ class FeatureEngineeringGames(BaseEstimator, TransformerMixin):
         X = self._create_tag_features(X)
         X = self._log_normalization(X)
         X = self._create_hybrid_flags(X)
+        X = self._create_free_feature(X)
         X = self._final_cleanup(X)
 
         return X
@@ -57,6 +58,12 @@ class FeatureEngineeringGames(BaseEstimator, TransformerMixin):
                 X["has_survival_crafting"] |
                 X["has_cozy_farming"]
             ).astype(int)
+        return X
+
+    def _create_free_feature(self, X):
+        """Crée la feature is_free: 1 si price == 0, sinon 0."""
+        if "price" in X.columns:
+            X["is_free"] = (X["price"] == 0).astype(int)
         return X
 
     def _final_cleanup(self, X):
