@@ -61,20 +61,28 @@ def main():
         print(f"Movie accuracy (clean) = {score:.3f}")
 
     # GAMES
-    if "is_free" in games_fe.columns:
+    target_col = None
+    if "is_trending" in games_fe.columns:
+        target_col = "is_trending"
+    elif "is_free" in games_fe.columns:
+        target_col = "is_free"
 
-        #  enlever price
-        game_exclude = ["price", "log_price"]
+    if target_col is not None:
+
+        #  enlever les colonnes leak explicites pour l'objectif future-trend
+        game_exclude = ["price", "log_price", "score_ratio", "owners", "days_since_release"]
 
         gX_train, gX_test, gy_train, gy_test = _prepare_ml_data(
             games_fe,
-            target_col="is_free",
+            target_col=target_col,
             drop_cols=["app_id", "name"],
             exclude_cols=game_exclude
         )
 
         score = _train_evaluate(gX_train, gX_test, gy_train, gy_test)
-        print(f"Game accuracy (clean) = {score:.3f}")
+        print(f"Game accuracy ({target_col}) = {score:.3f}")
+    else:
+        print("Aucun target de jeu disponible (is_trending/is_free non trouvé). Vérifiez le preprocess.")
 
 
 if __name__ == "__main__":

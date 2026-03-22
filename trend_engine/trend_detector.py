@@ -10,7 +10,6 @@ class FeatureEngineeringGames(BaseEstimator, TransformerMixin):
         self.epsilon = epsilon
 
     def fit(self, X, y=None):
-        self.columns_ = X.columns
         return self
 
     def transform(self, X):
@@ -20,7 +19,7 @@ class FeatureEngineeringGames(BaseEstimator, TransformerMixin):
         X = self._create_tag_features(X)
         X = self._log_normalization(X)
         X = self._create_hybrid_flags(X)
-        X = self._create_free_feature(X)
+        X = self._create_time_features(X)   # ✅ NOUVEAU
         X = self._final_cleanup(X)
 
         return X
@@ -34,10 +33,6 @@ class FeatureEngineeringGames(BaseEstimator, TransformerMixin):
         if {"positive", "negative"}.issubset(X.columns):
             total = X["positive"] + X["negative"] + self.epsilon
             X["review_quality_ratio"] = X["positive"] / total
-
-        if {"owners", "days_since_release"}.issubset(X.columns):
-            X["owners_per_day"] = X["owners"] / (X["days_since_release"] + 1)
-
         return X
 
     def _create_tag_features(self, X):
@@ -60,15 +55,13 @@ class FeatureEngineeringGames(BaseEstimator, TransformerMixin):
             ).astype(int)
         return X
 
-    def _create_free_feature(self, X):
-        """Crée la feature is_free: 1 si price == 0, sinon 0."""
-        if "price" in X.columns:
-            X["is_free"] = (X["price"] == 0).astype(int)
+    def _create_time_features(self, X):
+        if "days_since_release" in X.columns:
+            X["is_recent"] = (X["days_since_release"] < 90).astype(int)
         return X
 
     def _final_cleanup(self, X):
-        #  IMPORTANT : supprimer price car on prédit is_free
-        cols_to_drop = ["app_id", "release_date", "name", "price"]
+        cols_to_drop = ["app_id", "name", "release_date"]
         return X.drop(columns=[c for c in cols_to_drop if c in X.columns])
 
 
