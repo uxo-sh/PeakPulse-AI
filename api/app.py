@@ -85,15 +85,31 @@ def root():
 def health():
     return {"status": "ok", "version": "1.0.0"}
 
+@app.get("/api/status")
+def get_status():
+    return {
+        "status": "running",
+        "model": "RandomForest",
+        "domains": ["games", "movies", "music"],
+        "version": "1.0.0"
+    }
+
 @app.get("/api/trends/games")
 def get_games_trends():
     try:
         from data_processing.preprocessor import preprocessor
         from trend_engine.trend_detector import FeatureEngineeringGames
         movies_df, steam_df = preprocessor()
-        return {**GAMES_DATA, "source": "ml_model"}
-    except Exception:
-        return {**GAMES_DATA, "source": "simulated"}
+        fe = FeatureEngineeringGames()
+        steam_features = fe.fit_transform(steam_df)
+        return {
+            **GAMES_DATA,
+            "source": "ml_model",
+            "features_count": len(steam_features.columns),
+            "records": len(steam_features)
+        }
+    except Exception as e:
+        return {**GAMES_DATA, "source": "simulated", "error": str(e)}
 
 @app.get("/api/trends/movies")
 def get_movies_trends():
@@ -101,9 +117,16 @@ def get_movies_trends():
         from data_processing.preprocessor import preprocessor
         from trend_engine.trend_detector import FeatureEngineeringMovies
         movies_df, steam_df = preprocessor()
-        return {**MOVIES_DATA, "source": "ml_model"}
-    except Exception:
-        return {**MOVIES_DATA, "source": "simulated"}
+        fe = FeatureEngineeringMovies()
+        movies_features = fe.fit_transform(movies_df)
+        return {
+            **MOVIES_DATA,
+            "source": "ml_model",
+            "features_count": len(movies_features.columns),
+            "records": len(movies_features)
+        }
+    except Exception as e:
+        return {**MOVIES_DATA, "source": "simulated", "error": str(e)}
 
 @app.get("/api/trends/music")
 def get_music_trends():
@@ -119,15 +142,6 @@ def get_trends(domain: str):
     if domain not in data_map:
         return {"error": f"Domain '{domain}' not found"}
     return {**data_map[domain], "source": "simulated"}
-
-@app.get("/api/status")
-def get_status():
-    return {
-        "status": "running",
-        "model": "RandomForest",
-        "domains": ["games", "movies", "music"],
-        "version": "1.0.0"
-    }
 
 @app.get("/api/trending_games")
 def trending_games():
@@ -181,7 +195,13 @@ def genre_prediction(genre: str):
             "growth_rate": round(score * 1.2, 2),
             "engagement_rate": round(score * 0.9, 2),
             "player_count": int(score * 100000),
-            "review_ratio": round(score * 0.95, 2)
+            "review_ratio": round(score * 0.95, 2),
+            # Nouvelles features du refactoring équipe
+            "is_recent": 1,
+            "review_quality_ratio": round(score * 0.98, 2),
+            "tag_score": round(score * 1.1, 2),
+            "engagement_intensity": int(score * 500000),
+            "quality_score": round(score * 9.5, 2)
         }
     }
 
@@ -271,8 +291,11 @@ def pipeline_status():
                 "features": [
                     "growth_rate",
                     "engagement_rate",
-                    "player_count",
-                    "review_ratio"
+                    "review_quality_ratio",
+                    "tag_score",
+                    "is_recent",
+                    "engagement_intensity",
+                    "quality_score"
                 ]
             },
             {
