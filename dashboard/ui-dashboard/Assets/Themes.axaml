@@ -1,0 +1,46 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ResourceDictionary.ThemeDictionaries>
+
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="AppBg" Color="#0a0e1a" />
+            <SolidColorBrush x:Key="SidebarBg" Color="#0d1117" />
+            <SolidColorBrush x:Key="CardBg" Color="#0d1117" />
+            <SolidColorBrush x:Key="CardBg2" Color="#111827" />
+            <SolidColorBrush x:Key="BorderColor" Color="#1e2d40" />
+            <SolidColorBrush x:Key="TextPrimary" Color="White" />
+            <SolidColorBrush x:Key="TextSecondary" Color="#5a7a9c" />
+            <SolidColorBrush x:Key="TextMuted" Color="#3a4a5c" />
+            <SolidColorBrush x:Key="AccentBlue" Color="#4fc3f7" />
+            <SolidColorBrush x:Key="NavActive" Color="#1a2744" />
+            <SolidColorBrush x:Key="InputBg" Color="#111827" />
+            <SolidColorBrush x:Key="BadgeGreenBg" Color="#1a3a1a" />
+            <SolidColorBrush x:Key="BadgeGreenFg" Color="#4caf50" />
+            <SolidColorBrush x:Key="BadgeOrangeBg" Color="#3a2a1a" />
+            <SolidColorBrush x:Key="BadgeOrangeFg" Color="#ff9800" />
+            <SolidColorBrush x:Key="BadgeBlueBg" Color="#1a2744" />
+            <SolidColorBrush x:Key="BadgeBlueFg" Color="#4fc3f7" />
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="AppBg" Color="#f0f4f8" />
+            <SolidColorBrush x:Key="SidebarBg" Color="#ffffff" />
+            <SolidColorBrush x:Key="CardBg" Color="#ffffff" />
+            <SolidColorBrush x:Key="CardBg2" Color="#f8fafc" />
+            <SolidColorBrush x:Key="BorderColor" Color="#e2e8f0" />
+            <SolidColorBrush x:Key="TextPrimary" Color="#0f172a" />
+            <SolidColorBrush x:Key="TextSecondary" Color="#475569" />
+            <SolidColorBrush x:Key="TextMuted" Color="#94a3b8" />
+            <SolidColorBrush x:Key="AccentBlue" Color="#0284c7" />
+            <SolidColorBrush x:Key="NavActive" Color="#e0f2fe" />
+            <SolidColorBrush x:Key="InputBg" Color="#f1f5f9" />
+            <SolidColorBrush x:Key="BadgeGreenBg" Color="#dcfce7" />
+            <SolidColorBrush x:Key="BadgeGreenFg" Color="#16a34a" />
+            <SolidColorBrush x:Key="BadgeOrangeBg" Color="#fff7ed" />
+            <SolidColorBrush x:Key="BadgeOrangeFg" Color="#ea580c" />
+            <SolidColorBrush x:Key="BadgeBlueBg" Color="#e0f2fe" />
+            <SolidColorBrush x:Key="BadgeBlueFg" Color="#0284c7" />
+        </ResourceDictionary>
+
+    </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

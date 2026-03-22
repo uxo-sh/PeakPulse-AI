@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+    x:Class="ui_dashboard.Views.PipelineView"
+    Background="{DynamicResource AppBg}">
+    <ScrollViewer>
+        <StackPanel Margin="30">
+
+            <!-- Header -->
+            <StackPanel Margin="0,0,0,30">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <material:MaterialIcon Kind="TimelineCheck"
+                        Width="26" Height="26"
+                        Foreground="{DynamicResource AccentBlue}" />
+                    <TextBlock Text="Pipeline de données"
+                        Foreground="{DynamicResource TextPrimary}"
+                        FontSize="24" FontWeight="Bold" />
+                </StackPanel>
+                <TextBlock Text="Flux complet : Collecte → ML → API → Dashboard"
+                    Foreground="{DynamicResource TextMuted}"
+                    FontSize="12" Margin="0,6,0,0" />
+            </StackPanel>
+
+            <!-- Étapes du pipeline -->
+            <StackPanel Name="PipelineSteps" Spacing="12" />
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="ui_dashboard.Controls.CircleBar">
+    <Border Background="{DynamicResource CardBg}"
+        Classes="fadeIn"
+        CornerRadius="12" Padding="20"
+        BorderBrush="{DynamicResource BorderColor}"
+        BorderThickness="1">
+        <StackPanel HorizontalAlignment="Center" Spacing="8">
+            <TextBlock Name="TitleText"
+                Foreground="{DynamicResource TextMuted}"
+                FontSize="10" FontWeight="Bold"
+                HorizontalAlignment="Center" />
+            <Canvas Width="120" Height="120"
+                Name="CircleCanvas" />
+            <TextBlock Name="ValueText"
+                FontSize="28" FontWeight="Bold"
+                HorizontalAlignment="Center" />
+            <TextBlock Name="LabelText"
+                Foreground="{DynamicResource TextSecondary}"
+                FontSize="11"
+                HorizontalAlignment="Center" />
+        </StackPanel>
+    </Border>
+</UserControl>

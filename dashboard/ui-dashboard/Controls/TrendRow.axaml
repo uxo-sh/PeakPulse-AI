@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="ui_dashboard.Controls.TrendRow">
+
+    <Border Name="RowBorder" CornerRadius="8"
+        Padding="16,12" Margin="0,3">
+        <Grid ColumnDefinitions="*,100,120,160">
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <Border Name="DotColor" Width="8" Height="8"
+                    CornerRadius="4" Margin="0,0,10,0" />
+                <TextBlock Name="NameText"
+                    Foreground="{DynamicResource TextPrimary}"
+                    FontSize="12" />
+            </StackPanel>
+            <TextBlock Grid.Column="1" Name="ScoreText"
+                FontSize="12" FontWeight="Bold" />
+            <TextBlock Grid.Column="2" Name="TrendText"
+                FontSize="12" />
+            <Border Grid.Column="3" Name="BadgeBorder"
+                CornerRadius="6" Padding="8,3"
+                HorizontalAlignment="Left">
+                <TextBlock Name="BadgeText" FontSize="11" />
+            </Border>
+        </Grid>
+    </Border>
+
+</UserControl>
