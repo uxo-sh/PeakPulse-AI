@@ -1,0 +1,146 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+    x:Class="ui_dashboard.Views.DatabaseView"
+    Background="{DynamicResource AppBg}">
+    <ScrollViewer>
+        <StackPanel Margin="30" Spacing="24">
+
+            <!-- Header -->
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <material:MaterialIcon Kind="Database"
+                        Width="26" Height="26"
+                        Foreground="{DynamicResource AccentBlue}" />
+                    <TextBlock Text="Base de données"
+                        Foreground="{DynamicResource TextPrimary}"
+                        FontSize="24" FontWeight="Bold" />
+                </StackPanel>
+                <TextBlock Text="Tables : games · movies · trends"
+                    Foreground="{DynamicResource TextMuted}"
+                    FontSize="12" Margin="0,6,0,0" />
+            </StackPanel>
+
+            <!-- Table Jeux -->
+            <Border Background="{DynamicResource CardBg}"
+                CornerRadius="12" Padding="24"
+                BorderBrush="{DynamicResource BorderColor}"
+                BorderThickness="1">
+                <StackPanel Spacing="16">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <material:MaterialIcon Kind="Gamepad"
+                            Width="16" Height="16"
+                            Foreground="{DynamicResource AccentBlue}" />
+                        <TextBlock Text="Table : games"
+                            Foreground="{DynamicResource TextPrimary}"
+                            FontSize="14" FontWeight="Bold" />
+                    </StackPanel>
+
+                    <!-- En-tête games -->
+                    <Border Background="{DynamicResource NavActive}"
+                        CornerRadius="8" Padding="12,8">
+                        <Grid ColumnDefinitions="80,*,120,100,100,80">
+                            <TextBlock Grid.Column="0" Text="game_id"
+                                Foreground="{DynamicResource AccentBlue}"
+                                FontSize="11" FontWeight="Bold" />
+                            <TextBlock Grid.Column="1" Text="title"
+                                Foreground="{DynamicResource AccentBlue}"
+                                FontSize="11" FontWeight="Bold" />
+                            <TextBlock Grid.Column="2" Text="category"
+                                Foreground="{DynamicResource AccentBlue}"
+                                FontSize="11" FontWeight="Bold" />
+                            <TextBlock Grid.Column="3" Text="mechanic"
+                                Foreground="{DynamicResource AccentBlue}"
+                                FontSize="11" FontWeight="Bold" />
+                            <TextBlock Grid.Column="4" Text="players"
+                                Foreground="{DynamicResource AccentBlue}"
+                                FontSize="11" FontWeight="Bold" />
+                            <TextBlock Grid.Column="5" Text="reviews"
+                                Foreground="{DynamicResource AccentBlue}"
+                                FontSize="11" FontWeight="Bold" />
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Name="GamesTable" Spacing="4" />
+                </StackPanel>
+            </Border>
+
+            <!-- Table Films -->
+            <Border Background="{DynamicResource CardBg}"
+                CornerRadius="12" Padding="24"
+                BorderBrush="{DynamicResource BorderColor}"
+                BorderThickness="1">
+                <StackPanel Spacing="16">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <material:MaterialIcon Kind="Movie"
+                            Width="16" Height="16"
+                            Foreground="#7c4dff" />
+                        <TextBlock Text="Table : movies"
+                            Foreground="{DynamicResource TextPrimary}"
+                            FontSize="14" FontWeight="Bold" />
+                    </StackPanel>
+
+                    <!-- En-tête movies -->
+                    <Border Background="{DynamicResource NavActive}"
+                        CornerRadius="8" Padding="12,8">
+                        <Grid ColumnDefinitions="80,*,160,120,80">
+                            <TextBlock Grid.Column="0" Text="movie_id"
+                                Foreground="{DynamicResource AccentBlue}"
+                                FontSize="11" FontWeight="Bold" />
+                            <TextBlock Grid.Column="1" Text="title"
+                                Foreground="{DynamicResource AccentBlue}"
+                                FontSize="11" FontWeight="Bold" />
+                            <TextBlock Grid.Column="2" Text="genre"
+                                Foreground="{DynamicResource AccentBlue}"
+                                FontSize="11" FontWeight="Bold" />
+                            <TextBlock Grid.Column="3" Text="views"
+                                Foreground="{DynamicResource AccentBlue}"
+                                FontSize="11" FontWeight="Bold" />
+                            <TextBlock Grid.Column="4" Text="rating"
+                                Foreground="{DynamicResource AccentBlue}"
+                                FontSize="11" FontWeight="Bold" />
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Name="MoviesTable" Spacing="4" />
+                </StackPanel>
+            </Border>
+
+            <!-- Table Trends -->
+            <Border Background="{DynamicResource CardBg}"
+                CornerRadius="12" Padding="24"
+                BorderBrush="{DynamicResource BorderColor}"
+                BorderThickness="1">
+                <StackPanel Spacing="16">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <material:MaterialIcon Kind="TrendingUp"
+                            Width="16" Height="16"
+                            Foreground="#4caf50" />
+                        <TextBlock Text="Table : trends"
+                            Foreground="{DynamicResource TextPrimary}"
+                            FontSize="14" FontWeight="Bold" />
+                    </StackPanel>
+
+                    <!-- En-tête trends -->
+                    <Border Background="{DynamicResource NavActive}"
+                        CornerRadius="8" Padding="12,8">
+                        <Grid ColumnDefinitions="*,120,120">
+                            <TextBlock Grid.Column="0" Text="category"
+                                Foreground="{DynamicResource AccentBlue}"
+                                FontSize="11" FontWeight="Bold" />
+                            <TextBlock Grid.Column="1" Text="trend_score"
+                                Foreground="{DynamicResource AccentBlue}"
+                                FontSize="11" FontWeight="Bold" />
+                            <TextBlock Grid.Column="2" Text="prediction"
+                                Foreground="{DynamicResource AccentBlue}"
+                                FontSize="11" FontWeight="Bold" />
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Name="TrendsTable" Spacing="4" />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

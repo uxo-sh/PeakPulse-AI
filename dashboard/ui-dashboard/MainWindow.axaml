@@ -1,0 +1,259 @@
+<Window xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+  x:Class="ui_dashboard.MainWindow"
+  Title="PeakPulse AI"
+  Width="1200" Height="750"
+  Background="{DynamicResource AppBg}">
+
+  <Grid ColumnDefinitions="240,*" RowDefinitions="*">
+
+    <!-- SIDEBAR -->
+    <Border Grid.Column="0" Grid.Row="0"
+      Name="SidebarBorder"
+      Background="{DynamicResource SidebarBg}"
+      BorderBrush="{DynamicResource BorderColor}"
+      BorderThickness="0,0,1,0"
+      IsVisible="False">
+      <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- Logo -->
+        <StackPanel Grid.Row="0" Margin="24,24,24,0">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <material:MaterialIcon Kind="TrendingUp"
+              Width="30" Height="30"
+              Foreground="{DynamicResource AccentBlue}" />
+            <TextBlock Text="PeakPulse AI"
+              Foreground="{DynamicResource AccentBlue}"
+              FontSize="24" FontWeight="Bold" />
+          </StackPanel>
+          <TextBlock Text="Trend Intelligence Platform"
+            Foreground="{DynamicResource TextMuted}"
+            FontSize="10" Margin="0,4,0,0"
+            HorizontalAlignment="Center" />
+          <Border Height="1"
+            Background="{DynamicResource BorderColor}"
+            Margin="-24,12,-24,0" />
+        </StackPanel>
+
+        <!-- Nav -->
+        <StackPanel Grid.Row="1">
+          <TextBlock Text="DOMAINES"
+            Foreground="{DynamicResource TextMuted}"
+            FontSize="10" FontWeight="Bold"
+            Margin="24,20,0,10" />
+
+          <Button Name="BtnGames" Click="OnGamesClick"
+            Background="{DynamicResource NavActive}"
+            Margin="12,2" Padding="14,11"
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Left">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <material:MaterialIcon Kind="Gamepad"
+                Width="18" Height="18"
+                Foreground="{DynamicResource AccentBlue}" />
+              <TextBlock Text="Jeux vidéo" FontSize="13"
+                FontWeight="Bold"
+                Foreground="{DynamicResource AccentBlue}" />
+            </StackPanel>
+          </Button>
+
+          <Button Name="BtnMovies" Click="OnMoviesClick"
+            Background="Transparent"
+            Margin="12,2" Padding="14,11"
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Left">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <material:MaterialIcon Kind="Movie"
+                Width="18" Height="18"
+                Foreground="{DynamicResource TextSecondary}" />
+              <TextBlock Text="Cinéma" FontSize="13"
+                Foreground="{DynamicResource TextSecondary}" />
+            </StackPanel>
+          </Button>
+
+          <Button Name="BtnMusic" Click="OnMusicClick"
+            Background="Transparent"
+            Margin="12,2" Padding="14,11"
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Left">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <material:MaterialIcon Kind="Music"
+                Width="18" Height="18"
+                Foreground="{DynamicResource TextSecondary}" />
+              <TextBlock Text="Musique" FontSize="13"
+                Foreground="{DynamicResource TextSecondary}" />
+            </StackPanel>
+          </Button>
+
+          <!-- Séparateur -->
+          <Border Height="1"
+            Background="{DynamicResource BorderColor}"
+            Margin="24,12" />
+
+          <TextBlock Text="OUTILS"
+            Foreground="{DynamicResource TextMuted}"
+            FontSize="10" FontWeight="Bold"
+            Margin="24,0,0,10" />
+
+          <!-- Pipeline -->
+          <Button Name="BtnPipeline" Click="OnPipelineClick"
+            Background="Transparent"
+            Margin="12,2" Padding="14,11"
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Left">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <material:MaterialIcon Kind="TimelineCheck"
+                Width="18" Height="18"
+                Foreground="{DynamicResource TextSecondary}" />
+              <TextBlock Text="Pipeline" FontSize="13"
+                Foreground="{DynamicResource TextSecondary}" />
+            </StackPanel>
+          </Button>
+
+          <!-- Base de données -->
+          <Button Name="BtnDatabase" Click="OnDatabaseClick"
+            Background="Transparent"
+            Margin="12,2" Padding="14,11"
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Left">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <material:MaterialIcon Kind="Database"
+                Width="18" Height="18"
+                Foreground="{DynamicResource TextSecondary}" />
+              <TextBlock Text="Base de données" FontSize="13"
+                Foreground="{DynamicResource TextSecondary}" />
+            </StackPanel>
+          </Button>
+
+          <!-- Séparateur STATUS -->
+          <Border Height="1"
+            Background="{DynamicResource BorderColor}"
+            Margin="24,20" />
+
+          <TextBlock Text="STATUS"
+            Foreground="{DynamicResource TextMuted}"
+            FontSize="10" FontWeight="Bold"
+            Margin="24,0,0,12" />
+
+          <StackPanel Margin="24,0,0,8"
+            Orientation="Horizontal" Spacing="8">
+            <material:MaterialIcon Kind="CircleSlice8"
+              Width="12" Height="12"
+              Foreground="#4caf50" />
+            <TextBlock Text="API Python connectée"
+              Foreground="{DynamicResource TextSecondary}"
+              FontSize="11" />
+          </StackPanel>
+
+          <StackPanel Margin="24,0,0,0"
+            Orientation="Horizontal" Spacing="8">
+            <material:MaterialIcon Kind="DatabaseCheck"
+              Width="12" Height="12"
+              Foreground="#4caf50" />
+            <TextBlock Text="Données à jour"
+              Foreground="{DynamicResource TextSecondary}"
+              FontSize="11" />
+          </StackPanel>
+
+          <Button Name="BtnRefresh" Click="OnRefreshClick"
+            Margin="12,20,12,0" Padding="14,11"
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Center"
+            Background="#1a3a5c">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <material:MaterialIcon Kind="Refresh"
+                Width="16" Height="16"
+                Foreground="{DynamicResource AccentBlue}" />
+              <TextBlock Text="Actualiser" FontSize="12"
+                FontWeight="Bold"
+                Foreground="{DynamicResource AccentBlue}" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+
+        <!-- Bas sidebar : theme + profil -->
+        <Border Grid.Row="2"
+          BorderBrush="{DynamicResource BorderColor}"
+          BorderThickness="0,0,0,0"
+          Padding="16,8,16,16">
+          <StackPanel Spacing="12">
+
+            <!-- Bouton Light/Dark -->
+            <Border Background="{DynamicResource CardBg2}"
+              CornerRadius="8" Padding="12,10"
+              BorderBrush="{DynamicResource BorderColor}"
+              BorderThickness="1">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <material:MaterialIcon Grid.Column="0"
+                  Kind="ThemeLightDark"
+                  Width="16" Height="16"
+                  Foreground="{DynamicResource AccentBlue}"
+                  VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="Thème"
+                  Foreground="{DynamicResource TextSecondary}"
+                  FontSize="12" Margin="8,0,0,0"
+                  VerticalAlignment="Center" />
+                <Button Grid.Column="2" Name="BtnTheme"
+                  Click="OnThemeClick"
+                  Background="{DynamicResource NavActive}"
+                  Padding="8,4" CornerRadius="12">
+                  <material:MaterialIcon Name="ThemeIcon"
+                    Kind="MonitorShimmer"
+                    Width="14" Height="14"
+                    Foreground="{DynamicResource AccentBlue}" />
+                </Button>
+              </Grid>
+            </Border>
+
+            <!-- Séparateur au dessous du thème -->
+            <Border Height="1"
+              Background="{DynamicResource BorderColor}"
+              Margin="0,4,0,4" />
+
+            <!-- Profil -->
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <Border Grid.Column="0" Width="36" Height="36"
+                CornerRadius="18"
+                Background="{DynamicResource NavActive}"
+                Margin="0,0,10,0">
+                <material:MaterialIcon Kind="AccountCircle"
+                  Width="22" Height="22"
+                  Foreground="{DynamicResource AccentBlue}"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1"
+                VerticalAlignment="Center">
+                <TextBlock Name="UserNameText" Text="Utilisateur"
+                  Foreground="{DynamicResource TextPrimary}"
+                  FontSize="12" FontWeight="Bold" />
+                <TextBlock Name="UserRoleText" Text="Analyste"
+                  Foreground="{DynamicResource TextMuted}"
+                  FontSize="10" />
+              </StackPanel>
+              <Button Grid.Column="2" Name="BtnLogout"
+                Click="OnLogoutClick"
+                Background="Transparent" Padding="4">
+                <material:MaterialIcon Kind="Logout"
+                  Width="16" Height="16"
+                  Foreground="{DynamicResource TextSecondary}" />
+              </Button>
+            </Grid>
+
+          </StackPanel>
+        </Border>
+
+      </Grid>
+    </Border>
+
+    <!-- CONTENU DYNAMIQUE -->
+    <ContentControl Grid.Column="1" Grid.Row="0"
+      Name="MainContent"
+      VerticalAlignment="Stretch"
+      HorizontalAlignment="Stretch"
+      VerticalContentAlignment="Stretch"
+      HorizontalContentAlignment="Stretch" />
+
+  </Grid>
+</Window>

@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="ui_dashboard.Controls.BarChart">
+
+    <Border Background="{DynamicResource CardBg}"
+        Classes="fadeIn"
+        CornerRadius="12" Padding="24"
+        BorderBrush="{DynamicResource BorderColor}"
+        BorderThickness="1">
+        <StackPanel>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+                <TextBlock Grid.Column="0" Name="ChartTitle"
+                    Foreground="{DynamicResource TextPrimary}"
+                    FontSize="14" FontWeight="Bold" />
+                <Border Grid.Column="1"
+                    Background="{DynamicResource NavActive}"
+                    CornerRadius="6" Padding="10,4">
+                    <TextBlock Name="ChartBadge"
+                        Foreground="{DynamicResource AccentBlue}"
+                        FontSize="11" />
+                </Border>
+            </Grid>
+            <Grid Name="BarsGrid" ColumnDefinitions="*,*,*,*,*,*"
+                Height="120" Margin="0,0,0,8" />
+            <Grid ColumnDefinitions="*,*,*,*,*,*">
+                <TextBlock Grid.Column="0" Text="Oct"
+                    Foreground="{DynamicResource TextMuted}"
+                    FontSize="10" HorizontalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="Nov"
+                    Foreground="{DynamicResource TextMuted}"
+                    FontSize="10" HorizontalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="Déc"
+                    Foreground="{DynamicResource TextMuted}"
+                    FontSize="10" HorizontalAlignment="Center" />
+                <TextBlock Grid.Column="3" Text="Jan"
+                    Foreground="{DynamicResource TextMuted}"
+                    FontSize="10" HorizontalAlignment="Center" />
+                <TextBlock Grid.Column="4" Text="Fév"
+                    Foreground="{DynamicResource TextMuted}"
+                    FontSize="10" HorizontalAlignment="Center" />
+                <TextBlock Grid.Column="5" Text="Mar"
+                    Foreground="{DynamicResource AccentBlue}"
+                    FontSize="10" FontWeight="Bold"
+                    HorizontalAlignment="Center" />
+            </Grid>
+        </StackPanel>
+    </Border>
+
+</UserControl>

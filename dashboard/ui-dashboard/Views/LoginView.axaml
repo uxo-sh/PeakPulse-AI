@@ -1,0 +1,219 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+    x:Class="ui_dashboard.Views.LoginView"
+    Background="{DynamicResource AppBg}"
+    VerticalAlignment="Stretch"
+    HorizontalAlignment="Stretch">
+
+    <Grid VerticalAlignment="Stretch"
+        HorizontalAlignment="Stretch">
+
+        <StackPanel HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Width="460">
+
+            <!-- Logo -->
+            <StackPanel HorizontalAlignment="Center"
+                Margin="0,0,0,40">
+                <StackPanel Orientation="Horizontal" Spacing="10"
+                    HorizontalAlignment="Center">
+                    <material:MaterialIcon Kind="TrendingUp"
+                        Width="32" Height="32"
+                        Foreground="{DynamicResource AccentBlue}" />
+                    <TextBlock Text="PeakPulse AI"
+                        Foreground="{DynamicResource AccentBlue}"
+                        FontSize="28" FontWeight="Bold" />
+                </StackPanel>
+                <TextBlock Text="Trend Intelligence Platform"
+                    Foreground="{DynamicResource TextMuted}"
+                    FontSize="13" HorizontalAlignment="Center"
+                    Margin="0,8,0,0" />
+            </StackPanel>
+
+            <!-- Card -->
+            <Border Background="{DynamicResource CardBg}"
+                CornerRadius="16" Padding="40"
+                BorderBrush="{DynamicResource BorderColor}"
+                BorderThickness="1">
+                <StackPanel>
+
+                    <!-- Tabs -->
+                    <Grid ColumnDefinitions="*,*" Margin="0,0,0,32">
+                        <Button Name="BtnShowLogin" Click="OnShowLogin"
+                            Grid.Column="0"
+                            Background="Transparent" Padding="0,10"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center">
+                            <StackPanel>
+                                <TextBlock Name="LoginTabText" Text="Connexion"
+                                    Foreground="{DynamicResource AccentBlue}"
+                                    FontSize="14" FontWeight="Bold"
+                                    HorizontalAlignment="Center" />
+                                <Border Name="LoginTabLine" Height="2"
+                                    Background="{DynamicResource AccentBlue}"
+                                    Margin="0,6,0,0" />
+                            </StackPanel>
+                        </Button>
+                        <Button Name="BtnShowSignup" Click="OnShowSignup"
+                            Grid.Column="1"
+                            Background="Transparent" Padding="0,10"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center">
+                            <StackPanel>
+                                <TextBlock Name="SignupTabText" Text="Inscription"
+                                    Foreground="{DynamicResource TextMuted}"
+                                    FontSize="14"
+                                    HorizontalAlignment="Center" />
+                                <Border Name="SignupTabLine" Height="2"
+                                    Background="Transparent"
+                                    Margin="0,6,0,0" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <!-- LOGIN -->
+                    <StackPanel Name="LoginPanel" Spacing="16">
+                        <StackPanel Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <material:MaterialIcon Kind="Email"
+                                    Width="14" Height="14"
+                                    Foreground="{DynamicResource TextMuted}" />
+                                <TextBlock Text="Email"
+                                    Foreground="{DynamicResource TextSecondary}"
+                                    FontSize="12" />
+                            </StackPanel>
+                            <TextBox Name="LoginEmail"
+                                Watermark="votre@email.com"
+                                Background="{DynamicResource InputBg}"
+                                Foreground="{DynamicResource TextPrimary}"
+                                BorderBrush="{DynamicResource BorderColor}"
+                                Padding="12,10" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <material:MaterialIcon Kind="Lock"
+                                    Width="14" Height="14"
+                                    Foreground="{DynamicResource TextMuted}" />
+                                <TextBlock Text="Mot de passe"
+                                    Foreground="{DynamicResource TextSecondary}"
+                                    FontSize="12" />
+                            </StackPanel>
+                            <TextBox Name="LoginPassword"
+                                Watermark="••••••••" PasswordChar="•"
+                                Background="{DynamicResource InputBg}"
+                                Foreground="{DynamicResource TextPrimary}"
+                                BorderBrush="{DynamicResource BorderColor}"
+                                Padding="12,10" />
+                        </StackPanel>
+
+                        <Button Name="BtnLogin" Click="OnLoginClick"
+                            Margin="0,8,0,0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Background="{DynamicResource AccentBlue}"
+                            Padding="0,14">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <material:MaterialIcon Kind="Login"
+                                    Width="16" Height="16"
+                                    Foreground="White" />
+                                <TextBlock Text="Se connecter"
+                                    FontSize="14" FontWeight="Bold"
+                                    Foreground="white" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <!-- SIGNUP -->
+                    <StackPanel Name="SignupPanel" Spacing="16"
+                        IsVisible="False">
+                        <StackPanel Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <material:MaterialIcon Kind="Account"
+                                    Width="14" Height="14"
+                                    Foreground="{DynamicResource TextMuted}" />
+                                <TextBlock Text="Nom complet"
+                                    Foreground="{DynamicResource TextSecondary}"
+                                    FontSize="12" />
+                            </StackPanel>
+                            <TextBox Name="SignupName" Watermark="Votre nom"
+                                Background="{DynamicResource InputBg}"
+                                Foreground="{DynamicResource TextPrimary}"
+                                BorderBrush="{DynamicResource BorderColor}"
+                                Padding="12,10" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <material:MaterialIcon Kind="Email"
+                                    Width="14" Height="14"
+                                    Foreground="{DynamicResource TextMuted}" />
+                                <TextBlock Text="Email"
+                                    Foreground="{DynamicResource TextSecondary}"
+                                    FontSize="12" />
+                            </StackPanel>
+                            <TextBox Name="SignupEmail"
+                                Watermark="votre@email.com"
+                                Background="{DynamicResource InputBg}"
+                                Foreground="{DynamicResource TextPrimary}"
+                                BorderBrush="{DynamicResource BorderColor}"
+                                Padding="12,10" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <material:MaterialIcon Kind="Lock"
+                                    Width="14" Height="14"
+                                    Foreground="{DynamicResource TextMuted}" />
+                                <TextBlock Text="Mot de passe"
+                                    Foreground="{DynamicResource TextSecondary}"
+                                    FontSize="12" />
+                            </StackPanel>
+                            <TextBox Name="SignupPassword"
+                                Watermark="••••••••" PasswordChar="•"
+                                Background="{DynamicResource InputBg}"
+                                Foreground="{DynamicResource TextPrimary}"
+                                BorderBrush="{DynamicResource BorderColor}"
+                                Padding="12,10" />
+                        </StackPanel>
+
+                        <Button Name="BtnSignup" Click="OnSignupClick"
+                            Margin="0,8,0,0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Background="{DynamicResource AccentBlue}"
+                            Padding="0,14">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <material:MaterialIcon Kind="AccountPlus"
+                                    Width="16" Height="16"
+                                    Foreground="White" />
+                                <TextBlock Text="Créer un compte"
+                                    FontSize="14" FontWeight="Bold"
+                                    Foreground="White" />
+                            </StackPanel>
+                        </Button>
+                        <!-- <Button Name="BtnSignup" Click="OnSignupClick"
+                            Margin="0,8,0,0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Background="{DynamicResource AccentBlue}"
+                            Padding="0,14">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <material:MaterialIcon Kind="AccountPlus"
+                                    Width="16" Height="16"
+                                    Foreground="{DynamicResource AccentBlue}" />
+                                <TextBlock Text="Créer un compte"
+                                    FontSize="14" FontWeight="Bold"
+                                    Foreground="{DynamicResource AccentBlue}" />
+                            </StackPanel>
+                        </Button> -->
+                    </StackPanel>
+
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </Grid>
+
+</UserControl>

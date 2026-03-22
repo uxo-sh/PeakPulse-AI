@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+    x:Class="ui_dashboard.Controls.KpiCard">
+
+    <Border Background="{DynamicResource CardBg}"
+        Classes="fadeIn"
+        CornerRadius="12" Padding="20"
+        BorderBrush="{DynamicResource BorderColor}"
+        BorderThickness="1">
+        <StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                Margin="0,0,0,8">
+                <material:MaterialIcon Name="CardIcon"
+                    Width="16" Height="16" />
+                <TextBlock Name="LabelText"
+                    Foreground="{DynamicResource TextMuted}"
+                    FontSize="10" FontWeight="Bold" />
+            </StackPanel>
+            <TextBlock Name="ValueText"
+                FontSize="32" FontWeight="Bold"
+                Margin="0,4,0,4" />
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Name="TrendText" FontSize="11" />
+                <TextBlock Name="SubText"
+                    Foreground="{DynamicResource TextMuted}"
+                    FontSize="11" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+
+</UserControl>

@@ -1,0 +1,50 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  x:Class="ui_dashboard.Controls.LineChart">
+  <Border Background="{DynamicResource CardBg}"
+    CornerRadius="12" Padding="20"
+    BorderBrush="{DynamicResource BorderColor}"
+    BorderThickness="1">
+    <StackPanel>
+
+      <!-- Header -->
+      <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+        <TextBlock Grid.Column="0" Name="ChartTitle"
+          Foreground="{DynamicResource TextPrimary}"
+          FontSize="14" FontWeight="Bold" />
+        <Border Grid.Column="1"
+          Background="{DynamicResource NavActive}"
+          CornerRadius="6" Padding="10,4">
+          <TextBlock Name="ChartBadge"
+            Foreground="{DynamicResource AccentBlue}"
+            FontSize="11" />
+        </Border>
+      </Grid>
+
+      <!-- Graphique -->
+      <Grid>
+        <!-- Axe Y labels -->
+        <Canvas Name="YAxisCanvas" Width="40" Height="160"
+          HorizontalAlignment="Left" />
+        <!-- Zone de dessin -->
+        <Canvas Name="ChartCanvas" Height="160"
+          Margin="40,0,0,0" />
+        <!-- Tooltip -->
+        <Border Name="TooltipBorder"
+          Background="{DynamicResource CardBg}"
+          BorderBrush="{DynamicResource BorderColor}"
+          BorderThickness="1" CornerRadius="6"
+          Padding="10,6" IsVisible="False"
+          ZIndex="10">
+          <TextBlock Name="TooltipText"
+            Foreground="{DynamicResource TextPrimary}"
+            FontSize="11" />
+        </Border>
+      </Grid>
+
+      <!-- Axe X labels -->
+      <Grid Name="XAxisGrid" Margin="40,8,0,0" />
+
+    </StackPanel>
+  </Border>
+</UserControl>
