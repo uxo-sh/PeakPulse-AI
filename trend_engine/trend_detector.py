@@ -207,130 +207,154 @@ class FeatureEngineeringGames(BaseEstimator, TransformerMixin):
     #MOVIES 
 
 #MOVIES 
-import numpy as np
-import pandas as pd
-from sklearn.base import BaseEstimator, TransformerMixin
 
-
-class FeatureEngineeringMovies(BaseEstimator, TransformerMixin):
+class FeatureEngineeringMoviesV2(BaseEstimator, TransformerMixin):
     """
-    Feature engineering SANS leakage pour prédiction de succès film.
+    Feature Engineering orienté PREDICTION FUTURE (no leakage)
 
-    ✔ Utilise uniquement des données disponibles AVANT sortie
-    ✔ Aucune dépendance au revenue, ratings ou popularité
-    ✔ Compatible production (prédiction réelle)
-
-    Features finales :
-    - budget (log)
-    - runtime
-    - saisonnalité (mois sin/cos)
-    - complexité contenu (genres, keywords)
-    - flags genres (has_*)
+    ✔ Rolling Genre Momentum (temporel)
+    ✔ Budget intelligence
+    ✔ Market saturation
+    ✔ Robust content signals
     """
 
-    def __init__(self, epsilon=1e-6):
-        self.epsilon = epsilon
+    def __init__(self, current_year=2026):
+        self.current_year = current_year
+        self.genre_trend = {}
 
     def fit(self, X, y=None):
+        X = X.copy()
+
+        if "release_date" in X.columns:
+            X["release_date"] = pd.to_datetime(X["release_date"])
+            X = X.sort_values("release_date")
+
+        if y is not None:
+            X["target"] = y
+            genre_cols = [c for c in X.columns if c.startswith("has_")]
+
+            # 🔥 Rolling trend (NO LEAKAGE)
+            for col in genre_cols:
+                trend = (
+                    X.groupby(X["release_date"].dt.year)[["target", col]]
+                    .apply(lambda df: df[df[col] == 1]["target"].mean())
+                    .fillna(0)
+                )
+                self.genre_trend[col] = trend.to_dict()
+
         return self
 
     def transform(self, X):
         X = X.copy()
 
-        X = self._handle_time_features(X)
-        X = self._create_budget_features(X)
-        X = self._create_content_features(X)
-        X = self._final_cleanup(X)
+        X = self._time_features(X)
+        X = self._budget_features(X)
+        X = self._content_features(X)
+        X = self._market_features(X)
+        X = self._genre_momentum(X)
+        X = self._cleanup(X)
 
         return X
 
-    # ============================================================
-    # 1. FEATURES TEMPORELLES (SAFE)
-    # ============================================================
-    def _handle_time_features(self, X):
+    # ------------------------
 
+    def _time_features(self, X):
         if "release_date" in X.columns:
             X["release_date"] = pd.to_datetime(X["release_date"], errors="coerce")
 
-            month = X["release_date"].dt.month.fillna(1)
+            X["year"] = X["release_date"].dt.year.fillna(self.current_year)
+            X["month"] = X["release_date"].dt.month.fillna(1)
 
-            # Encodage cyclique (important pour saisonnalité)
-            X["month_sin"] = np.sin(2 * np.pi * month / 12)
-            X["month_cos"] = np.cos(2 * np.pi * month / 12)
+            X["month_sin"] = np.sin(2 * np.pi * X["month"] / 12)
+            X["month_cos"] = np.cos(2 * np.pi * X["month"] / 12)
+
+            X["film_age"] = (self.current_year - X["year"]).clip(lower=0)
 
         return X
 
-    # ============================================================
-    # 2. BUDGET (SAFE et très important)
-    # ============================================================
-    def _create_budget_features(self, X):
+    # ------------------------
 
+    def _budget_features(self, X):
         if "budget" in X.columns:
             X["budget"] = X["budget"].fillna(0)
 
-            # Log pour réduire skew
             X["log_budget"] = np.log1p(X["budget"])
+            X["budget_bucket"] = pd.cut(
+                X["budget"],
+                bins=[0, 2e6, 20e6, 100e6, 1e9],
+                labels=[0, 1, 2, 3]
+            ).astype(float)
 
-            # Catégorisation simple (optionnel mais utile)
-            X["is_low_budget"] = (X["budget"] < 1e6).astype(int)
-            X["is_mid_budget"] = ((X["budget"] >= 1e6) & (X["budget"] < 50e6)).astype(int)
-            X["is_high_budget"] = (X["budget"] >= 50e6).astype(int)
+            X["is_blockbuster"] = (X["budget"] > 100e6).astype(int)
 
         return X
 
-    # ============================================================
-    # 3. CONTENU DU FILM (SAFE)
-    # ============================================================
-    def _create_content_features(self, X):
+    # ------------------------
 
-        # Complexité du film
+    def _content_features(self, X):
         if "num_keywords" in X.columns:
             X["num_keywords"] = X["num_keywords"].fillna(0)
 
         if "num_genres" in X.columns:
             X["num_genres"] = X["num_genres"].fillna(0)
 
-        # Interaction simple (plus de genres + keywords)
-        if {"num_keywords", "num_genres"}.issubset(X.columns):
-            X["content_complexity"] = X["num_keywords"] * X["num_genres"]
+        X["content_complexity"] = np.log1p(
+            X["num_keywords"] * X["num_genres"]
+        )
+
+        X["keyword_density"] = X["num_keywords"] / (X["num_genres"] + 1)
 
         return X
 
-    # ============================================================
-    # 4. CLEAN FINAL (CRITIQUE)
-    # ============================================================
-    def _final_cleanup(self, X):
+    # ------------------------
 
-        cols_to_drop = [
-            # ❌ leakage direct
-            "revenue",
-            "ROI",
+    def _market_features(self, X):
+        """
+        Approximation simple : saturation marché
+        """
+        if "film_age" in X.columns and "num_genres" in X.columns:
+            X["market_pressure"] = X["num_genres"] / (X["film_age"].clip(lower=0) + 1)
 
-            # ❌ leakage post-release
-            "popularity",
-            "vote_count",
-            "vote_average",
-            "avg_user_rating",
-            "num_ratings",
-            "num_unique_users",
+        return X
 
-            # ❌ dérivés dangereux
-            "log_revenue",
-            "log_popularity",
-            "log_vote_count",
+    # ------------------------
 
-            # ❌ inutiles
-            "id",
-            "title",
-            "release_date",
+    def _genre_momentum(self, X):
+        if "year" not in X.columns:
+            return X
+
+        genre_cols = [c for c in X.columns if c.startswith("has_")]
+
+        for col in genre_cols:
+            trend_map = self.genre_trend.get(col, {})
+
+            X[f"momentum_{col}"] = X.apply(
+                lambda row: trend_map.get(row["year"], 0) * row[col],
+                axis=1
+            )
+
+        return X
+
+    # ------------------------
+
+    def _cleanup(self, X):
+        drop_cols = [
+            # Leakage direct
+            "revenue", "ROI", "popularity",
+            "vote_count", "vote_average",
+            "avg_user_rating", "num_ratings", "num_unique_users",
+            # Dérivés post-release
+            "log_revenue", "log_popularity", "log_vote_count",
+            # Biais inflation/historique
+            "budget", "days_since_release",
+            # Inutiles pour le modèle
+            "id", "title", "release_date",
+            # Encodés en features dérivées (film_age, month_sin/cos)
+            "year", "month",
         ]
 
-        X = X.drop(columns=[c for c in cols_to_drop if c in X.columns], errors="ignore")
-
-        # Garder uniquement numérique / bool
+        X = X.drop(columns=[c for c in drop_cols if c in X.columns], errors="ignore")
         X = X.select_dtypes(include=["number", "bool"])
-
-        # Remplir NaN
         X = X.fillna(0)
 
-        return X
+        return X  

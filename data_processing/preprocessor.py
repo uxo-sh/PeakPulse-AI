@@ -19,11 +19,11 @@ def preprocessor():
     if not os.path.isdir(PROCESSED_DIR):
         raise FileNotFoundError(f"Dossier de données nettoyées introuvable: {PROCESSED_DIR}")
 
-    movies_file = _find_latest_file("movies_cleaned_for_ml_*.csv")
+    movies_file = _find_latest_file("peakpulse_v2_2024*.csv")
     steam_file = _find_latest_file("steam_v2_cleaned_for_ml_*.csv")
 
     if movies_file is None:
-        raise FileNotFoundError("Fichier movies_cleaned_for_ml_*.csv introuvable dans data_collector/processed")
+        raise FileNotFoundError("Fichier peakpulse_v2_2024*.csv introuvable dans data_collector/processed")
     if steam_file is None:
         raise FileNotFoundError("Fichier steam_v2_cleaned_for_ml_*.csv introuvable dans data_collector/processed")
 

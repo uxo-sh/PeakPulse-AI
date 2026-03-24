@@ -16,6 +16,12 @@ Corrections vs version précédente :
    - Ajout d'un check explicite avec message d'erreur clair
 
 3. LEAK_COLS : price retiré de la liste (utilisé par FeatureEngineeringGames)
+
+REFACTORISATION :
+─────────────────
+- Toutes les fonctions retournent leurs valeurs calculées (dict ou DataFrame)
+  en plus de conserver leurs print existants.
+- test_feature_engineering_games() retourne un dict complet réutilisable.
 """
 
 import numpy as np
@@ -76,6 +82,9 @@ def create_trend_target(train_df: pd.DataFrame, df: pd.DataFrame) -> tuple:
         Q85 → 15% positifs  ← si tu veux une cible plus sélective
 
     Le seuil est toujours calculé sur le TRAIN uniquement.
+
+    Retourne :
+        tuple(df_avec_cible, owners_threshold)
     """
     df = df.copy()
     owners_threshold = train_df["owners"].quantile(0.70)
@@ -87,8 +96,18 @@ def create_trend_target(train_df: pd.DataFrame, df: pd.DataFrame) -> tuple:
 # 2. THRESHOLD TUNING
 # ===========================================================================
 
-def find_optimal_threshold(y_true: np.ndarray, y_proba: np.ndarray) -> float:
-    """Seuil qui maximise le F1 via la courbe Precision-Recall."""
+def find_optimal_threshold(y_true: np.ndarray, y_proba: np.ndarray) -> dict:
+    """
+    Seuil qui maximise le F1 via la courbe Precision-Recall.
+
+    Retourne :
+        dict avec les clés :
+            - threshold   (float)  : seuil optimal
+            - f1          (float)  : F1 au seuil optimal
+            - precisions  (array)  : tableau precisions de la courbe PR
+            - recalls     (array)  : tableau recalls de la courbe PR
+            - thresholds  (array)  : tableau thresholds de la courbe PR
+    """
     precisions, recalls, thresholds = precision_recall_curve(y_true, y_proba)
     denom     = precisions + recalls + 1e-9
     f1_scores = np.where(denom == 0, 0, 2 * precisions * recalls / denom)
@@ -96,7 +115,14 @@ def find_optimal_threshold(y_true: np.ndarray, y_proba: np.ndarray) -> float:
     best_thr  = float(thresholds[best_idx])
     best_f1   = float(f1_scores[best_idx])
     print(f"   → Seuil optimal : {best_thr:.4f}  (F1 = {best_f1:.4f})")
-    return best_thr
+
+    return {
+        "threshold":  best_thr,
+        "f1":         best_f1,
+        "precisions": precisions,
+        "recalls":    recalls,
+        "thresholds": thresholds,
+    }
 
 
 # ===========================================================================
@@ -108,7 +134,7 @@ def print_confusion_matrix(
     label_neg: str,
     label_pos: str,
     title: str = "",
-) -> None:
+) -> dict:
     """
     Matrice de confusion avec VN/FP/FN/VP explicites.
 
@@ -116,6 +142,16 @@ def print_confusion_matrix(
         cm[0,1] FP : prédit Tendance à tort
         cm[1,0] FN : raté un vrai jeu tendance
         cm[1,1] VP : bien prédit Tendance
+
+    Retourne :
+        dict avec les clés :
+            - vn        (int)   : vrais négatifs
+            - fp        (int)   : faux positifs
+            - fn        (int)   : faux négatifs
+            - vp        (int)   : vrais positifs
+            - recall    (float) : recall (sensibilité)
+            - precision (float) : précision
+            - f1        (float) : F1-score
     """
     vn, fp = int(cm[0, 0]), int(cm[0, 1])
     fn, vp = int(cm[1, 0]), int(cm[1, 1])
@@ -139,6 +175,16 @@ def print_confusion_matrix(
     print(f"  Précision = {precision:.4f}   (parmi tous les prédits tendance, combien vrais)")
     print(f"  F1        = {f1:.4f}")
 
+    return {
+        "vn":        vn,
+        "fp":        fp,
+        "fn":        fn,
+        "vp":        vp,
+        "recall":    recall,
+        "precision": precision,
+        "f1":        f1,
+    }
+
 
 # ===========================================================================
 # 4. JEUX QUI VONT EXPLOSER
@@ -150,11 +196,16 @@ def predict_exploding_games(
     y_proba: np.ndarray,
     optimal_threshold: float,
     top_n: int = 20,
-) -> None:
+) -> pd.DataFrame:
     """
     Top N jeux avec la plus haute probabilité de tendance
     parmi ceux que la cible actuelle ne classe PAS encore tendance.
     Ce sont les jeux à surveiller : le modèle pense qu'ils vont exploser.
+
+    Retourne :
+        pd.DataFrame : watchlist avec colonnes name, proba_tendance, price,
+                       has_* (genres) et toutes les autres colonnes de test_raw.
+                       Index réinitialisé (0..top_n-1).
     """
     print(f"\n{'='*65}")
     print("💥 JEUX QUI VONT EXPLOSER (hautes proba, pas encore tendance)")
@@ -190,6 +241,8 @@ def predict_exploding_games(
     print(f"\n  💡 {top_n} jeux avec le plus fort potentiel selon le modèle")
     print(f"     Seuil de décision utilisé : {optimal_threshold:.4f}")
 
+    return watchlist
+
 
 # ===========================================================================
 # 5. ANALYSE DES GENRES TENDANCE
@@ -199,17 +252,30 @@ def analyze_trending_genres(
     X_test: pd.DataFrame,
     y_pred: np.ndarray,
     y_proba: np.ndarray,
-) -> None:
-    """Analyse les genres par probabilité moyenne et ratio de prédictions tendance."""
+) -> pd.DataFrame:
+    """
+    Analyse les genres par probabilité moyenne et ratio de prédictions tendance.
+
+    Retourne :
+        pd.DataFrame : stats avec colonnes Genre, Count, Avg_Proba,
+                       Trend_Ratio, Avg_Proba_Trend, Trend_Score.
+                       Trié par Trend_Score décroissant.
+                       Retourne un DataFrame vide si aucune colonne has_* trouvée
+                       ou en cas d'erreur.
+    """
     print(f"\n{'='*65}")
     print("🔮 ANALYSE DES GENRES TENDANCE")
     print(f"{'='*65}")
+
+    empty_df = pd.DataFrame(columns=[
+        "Genre", "Count", "Avg_Proba", "Trend_Ratio", "Avg_Proba_Trend", "Trend_Score"
+    ])
 
     try:
         genre_cols = [c for c in X_test.columns if c.startswith("has_")]
         if not genre_cols:
             print("⚠️  Aucune colonne has_XXX trouvée")
-            return
+            return empty_df
 
         print(f"📌 {len(genre_cols)} genres détectés\n")
 
@@ -272,18 +338,65 @@ def analyze_trending_genres(
         for i, (_, r) in enumerate(stats.nlargest(5, "Trend_Ratio").iterrows()):
             print(f"{i+1:<5}│{r['Genre']:<22}│{r['Trend_Ratio']:>10.2%}")
 
+        return stats.reset_index(drop=True)
+
     except Exception as e:
         print(f"⚠️  Erreur analyse genres : {e}")
+        return empty_df
 
 
 # ===========================================================================
 # 6. TEST PRINCIPAL
 # ===========================================================================
 
-def test_feature_engineering_games() -> None:
+def test_feature_engineering_games() -> dict:
+    """
+    Pipeline complet de test FeatureEngineeringGames.
+
+    Retourne :
+        dict avec les clés :
+            - accuracy              (float)
+            - roc_auc               (float)
+            - pr_auc                (float)
+            - f1                    (float)
+            - optimal_threshold     (float)
+            - threshold_details     (dict)   ← retour complet de find_optimal_threshold
+            - confusion_matrix_optimal (dict) ← retour de print_confusion_matrix (seuil optimal)
+            - confusion_matrix_default (dict) ← retour de print_confusion_matrix (seuil 0.50)
+            - trending_genres       (pd.DataFrame) ← retour de analyze_trending_genres
+            - exploding_games       (pd.DataFrame) ← retour de predict_exploding_games
+            - cv_scores             (dict | None)  ← clés f1, roc_auc, pr_auc (mean ± std)
+            - feature_importances   (dict | None)  ← {feature_name: importance}
+            - y_proba               (np.ndarray)   ← probabilités brutes sur le test
+            - y_pred                (np.ndarray)   ← prédictions binaires (seuil optimal)
+            - y_test                (pd.Series)    ← vraies étiquettes test
+            - X_test                (pd.DataFrame) ← features test (avant FE)
+            - error                 (str | None)   ← message d'erreur si échec
+    """
     print("\n" + "=" * 65)
     print("🎮 TEST DU PIPELINE - FeatureEngineeringGames")
     print("=" * 65)
+
+    # Valeurs par défaut du dict de retour
+    result: dict = {
+        "accuracy":                 None,
+        "roc_auc":                  None,
+        "pr_auc":                   None,
+        "f1":                       None,
+        "optimal_threshold":        None,
+        "threshold_details":        None,
+        "confusion_matrix_optimal": None,
+        "confusion_matrix_default": None,
+        "trending_genres":          None,
+        "exploding_games":          None,
+        "cv_scores":                None,
+        "feature_importances":      None,
+        "y_proba":                  None,
+        "y_pred":                   None,
+        "y_test":                   None,
+        "X_test":                   None,
+        "error":                    None,
+    }
 
     try:
         # ── Étape 1 : Chargement ──────────────────────────────────────
@@ -348,6 +461,9 @@ def test_feature_engineering_games() -> None:
         X_test  = test_raw.drop(columns=[TARGET_COL] + LEAK_COLS, errors="ignore")
         y_test  = test_raw[TARGET_COL]
 
+        result["X_test"] = X_test
+        result["y_test"] = y_test
+
         print(f"✅ {X_train.shape[1]} features │ colonnes : {list(X_train.columns)}")
 
         # ── Étape 5 : Entraînement ────────────────────────────────────
@@ -376,12 +492,18 @@ def test_feature_engineering_games() -> None:
             )
 
         y_proba = proba_matrix[:, 1]
+        result["y_proba"] = y_proba
         print(f"✅ Probabilités : min={y_proba.min():.4f} | max={y_proba.max():.4f} | mean={y_proba.mean():.4f}")
 
         # ── Étape 7 : Threshold tuning ────────────────────────────────
         print("\n🎚️  Étape 7: Recherche du seuil optimal...")
-        optimal_thr = find_optimal_threshold(y_test.values, y_proba)
-        y_pred      = (y_proba >= optimal_thr).astype(int)
+        threshold_details = find_optimal_threshold(y_test.values, y_proba)
+        optimal_thr       = threshold_details["threshold"]
+        y_pred            = (y_proba >= optimal_thr).astype(int)
+
+        result["optimal_threshold"] = optimal_thr
+        result["threshold_details"] = threshold_details
+        result["y_pred"]            = y_pred
 
         # ── Étape 8 : Métriques ───────────────────────────────────────
         print("\n📊 Étape 8: RÉSULTATS DE PERFORMANCE")
@@ -391,6 +513,11 @@ def test_feature_engineering_games() -> None:
         roc_auc  = roc_auc_score(y_test, y_proba)
         pr_auc   = average_precision_score(y_test, y_proba)
         f1       = f1_score(y_test, y_pred, zero_division=0)
+
+        result["accuracy"] = accuracy
+        result["roc_auc"]  = roc_auc
+        result["pr_auc"]   = pr_auc
+        result["f1"]       = f1
 
         print(f"  Accuracy            : {accuracy:.4f} ({accuracy*100:.2f}%)")
         print(f"  ROC-AUC             : {roc_auc:.4f}  ← sépare bien les classes ?")
@@ -409,8 +536,14 @@ def test_feature_engineering_games() -> None:
             print(f"    F1      : {f1_cv.mean():.4f} ± {f1_cv.std():.4f}")
             print(f"    ROC-AUC : {roc_cv.mean():.4f} ± {roc_cv.std():.4f}")
             print(f"    PR-AUC  : {pr_cv.mean():.4f} ± {pr_cv.std():.4f}")
+            result["cv_scores"] = {
+                "f1":      {"mean": float(f1_cv.mean()),  "std": float(f1_cv.std()),  "values": f1_cv.tolist()},
+                "roc_auc": {"mean": float(roc_cv.mean()), "std": float(roc_cv.std()), "values": roc_cv.tolist()},
+                "pr_auc":  {"mean": float(pr_cv.mean()),  "std": float(pr_cv.std()),  "values": pr_cv.tolist()},
+            }
         except Exception as e:
             print(f"  ⚠️  Cross-val impossible : {e}")
+            result["cv_scores"] = None
 
         # ── Étape 9 : Rapport de classification ──────────────────────
         print(f"\n📋 Rapport de classification (seuil = {optimal_thr:.4f}) :")
@@ -425,16 +558,18 @@ def test_feature_engineering_games() -> None:
 
         # ── Étape 10 : Matrices de confusion ─────────────────────────
         cm_opt = confusion_matrix(y_test, y_pred)
-        print_confusion_matrix(
+        cm_opt_dict = print_confusion_matrix(
             cm_opt, LABEL_NEG, LABEL_POS,
             title=f"📈 Matrice — seuil OPTIMAL ({optimal_thr:.4f})",
         )
+        result["confusion_matrix_optimal"] = cm_opt_dict
 
         cm_05 = confusion_matrix(y_test, (y_proba >= 0.5).astype(int))
-        print_confusion_matrix(
+        cm_default_dict = print_confusion_matrix(
             cm_05, LABEL_NEG, LABEL_POS,
             title="📈 Matrice — seuil PAR DÉFAUT (0.50) [référence]",
         )
+        result["confusion_matrix_default"] = cm_default_dict
 
         # ── Étape 11 : Analyse des erreurs ────────────────────────────
         print(f"\n🔍 Étape 11: ANALYSE DES ERREURS")
@@ -473,20 +608,28 @@ def test_feature_engineering_games() -> None:
                 indices = np.argsort(imps)[::-1]
                 print(f"\n  {'Rang':<5}│ {'Feature':<32}│ {'Importance':>10} │ Graphique")
                 print("  " + "─" * 65)
+                feat_imp_dict = {}
                 for i in range(min(15, len(f_names))):
                     idx  = indices[i]
                     imp  = imps[idx]
                     nm   = str(f_names[idx])[:32]
                     bar  = "█" * int(imp * 40)
+                    feat_imp_dict[str(f_names[idx])] = float(imp)
                     print(f"  {i+1:<5}│ {nm:<32}│ {imp:>10.6f} │ {bar}")
+                result["feature_importances"] = feat_imp_dict
         except Exception as e:
             print(f"  ⚠️  Features impossibles à extraire : {e}")
+            result["feature_importances"] = None
 
         # ── Étape 13 : Genres tendance ────────────────────────────────
-        analyze_trending_genres(X_test, y_pred, y_proba)
+        trending_genres_df = analyze_trending_genres(X_test, y_pred, y_proba)
+        result["trending_genres"] = trending_genres_df
 
         # ── Étape 14 : Jeux qui vont exploser ────────────────────────
-        predict_exploding_games(test_raw, y_test, y_proba, optimal_thr, top_n=20)
+        exploding_games_df = predict_exploding_games(
+            test_raw, y_test, y_proba, optimal_thr, top_n=20
+        )
+        result["exploding_games"] = exploding_games_df
 
         print("\n" + "=" * 65)
         print("✅ TEST TERMINÉ AVEC SUCCÈS!")
@@ -496,29 +639,62 @@ def test_feature_engineering_games() -> None:
         print(f"\n❌ ERREUR : {e}")
         import traceback
         traceback.print_exc()
+        result["error"] = str(e)
+
+    return result
 
 
 # ===========================================================================
 # 7. TEST RAPIDE
 # ===========================================================================
 
-def quick_test() -> None:
+def quick_test() -> dict:
+    """
+    Test rapide de vérification du pipeline sur un échantillon de 300 jeux.
+
+    Retourne :
+        dict avec les clés :
+            - n_games   (int)           : nombre de jeux chargés
+            - probas    (list[float])   : probabilités sur les 5 premiers exemples
+            - success   (bool)          : True si le pipeline a fonctionné
+            - error     (str | None)    : message d'erreur si échec
+    """
     print("\n⚡ TEST RAPIDE")
     print("─" * 40)
+
+    result: dict = {
+        "n_games": None,
+        "probas":  None,
+        "success": False,
+        "error":   None,
+    }
+
     try:
         _, steam_df = preprocessor()
-        print(f"✅ {len(steam_df):,} jeux chargés")
+        n_games = len(steam_df)
+        print(f"✅ {n_games:,} jeux chargés")
+        result["n_games"] = n_games
+
         sample   = steam_df.head(300).copy()
         X_sample = sample.drop(columns=LEAK_COLS + [TARGET_COL], errors="ignore")
         y_sample = (sample["owners"] > sample["owners"].median()).astype(int)
         pipeline.fit(X_sample, y_sample)
-        proba = pipeline.predict_proba(X_sample.head(5))[:, 1]
-        print(f"✅ Probabilités : {proba.round(3)}")
+
+        proba_arr = pipeline.predict_proba(X_sample.head(5))[:, 1]
+        probas    = proba_arr.round(3).tolist()
+        print(f"✅ Probabilités : {probas}")
         print("🎉 PIPELINE FONCTIONNEL!")
+
+        result["probas"]  = probas
+        result["success"] = True
+
     except Exception as e:
         print(f"❌ {e}")
         import traceback
         traceback.print_exc()
+        result["error"] = str(e)
+
+    return result
 
 
 # ===========================================================================
@@ -528,6 +704,6 @@ def quick_test() -> None:
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "--quick":
-        quick_test()
+        results = quick_test()
     else:
-        test_feature_engineering_games()
+        results = test_feature_engineering_games()

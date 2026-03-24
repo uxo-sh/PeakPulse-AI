@@ -237,3 +237,5 @@ obj/
 publish/
 
 
+# Data processed
+data_collector/processed/*.csv

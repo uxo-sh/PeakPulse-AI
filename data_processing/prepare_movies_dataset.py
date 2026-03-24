@@ -3,15 +3,15 @@ import os
 from datetime import datetime
 import numpy as np
 from clean_data import (
-    parse_keywords, parse_genres, clean_numeric_column,
+    clean_numeric_column,
     validate_dataframe_ids, calculate_days_since_release,
     validate_date_column, handle_missing_values_columns,
     create_genre_flags
 )
 
-RAW_DIR = "../data_collector/raw"
-PROCESSED_DIR = "../data_collector/processed"
-os.makedirs(PROCESSED_DIR, exist_ok=True)
+RAW_DATA_PATH = "../data_collector/raw/movies_2024_raw.csv"
+PROCESSED_DATA_PATH = "../data_collector/processed/peakpulse_v2_2024.csv"
+os.makedirs(os.path.dirname(PROCESSED_DATA_PATH), exist_ok=True)
 
 print("=" * 60)
 print("PREPROCESSING FILMS - Chargement et nettoyage des données brutes")
@@ -19,60 +19,35 @@ print("=" * 60)
 
 # ========== 1. CHARGEMENT DES DATASETS BRUTS ==========
 print("\n1. Chargement des datasets bruts...")
-movies = pd.read_csv(f"{RAW_DIR}/movies_metadata.csv", low_memory=False)
-keywords = pd.read_csv(f"{RAW_DIR}/keywords.csv")
-ratings = pd.read_csv(f"{RAW_DIR}/ratings.csv")
-links = pd.read_csv(f"{RAW_DIR}/links.csv")
+movies = pd.read_csv(RAW_DATA_PATH, low_memory=False)
 
 # ========== 2. NETTOYAGE DES IDs ==========
 print("2. Nettoyage et validation des IDs...")
 movies = validate_dataframe_ids(movies, 'id')
-keywords = validate_dataframe_ids(keywords, 'id')
-ratings['movieId'] = clean_numeric_column(ratings['movieId'], fill_value=np.nan)
-ratings = ratings.dropna(subset=['movieId'])
-ratings['movieId'] = ratings['movieId'].astype(int)
-links['tmdbId'] = clean_numeric_column(links['tmdbId'], fill_value=np.nan)
-links = links.dropna(subset=['tmdbId'])
-links['tmdbId'] = links['tmdbId'].astype(int)
 
-# ========== 3. FUSION KEYWORDS ==========
-print("3. Fusion avec keywords...")
-keywords_list = keywords['keywords'].apply(parse_keywords)
-keywords['keywords_list'] = keywords_list
-keywords_group = keywords.groupby('id')['keywords_list'].apply(
-    lambda x: list(set(sum(x, [])))
-).reset_index()
-keywords_group.rename(columns={'keywords_list': 'all_keywords'}, inplace=True)
-
-movies = movies.merge(keywords_group, on='id', how='left')
-movies['num_keywords'] = movies['all_keywords'].apply(
-    lambda x: len(x) if isinstance(x, list) else 0
+# ========== 3. PARSING KEYWORDS ==========
+print("3. Parsing keywords...")
+# Les keywords sont maintenant des strings séparées par des virgules
+movies['keywords_list'] = movies['keywords'].apply(
+    lambda x: [k.strip() for k in str(x).split(',')] if pd.notna(x) else []
 )
+movies['num_keywords'] = movies['keywords_list'].apply(len)
 
-# ========== 4. FUSION RATINGS ==========
-print("4. Fusion avec ratings utilisateur...")
-ratings_agg = ratings.groupby('movieId').agg({
-    'rating': ['mean', 'count'],
-    'userId': 'nunique'
-}).reset_index()
-ratings_agg.columns = ['movieId', 'avg_user_rating', 'num_ratings', 'num_unique_users']
-
-# Lien via links.csv
-ratings_agg = ratings_agg.merge(links[['movieId', 'tmdbId']], on='movieId', how='left')
-ratings_agg = ratings_agg.dropna(subset=['tmdbId'])
-ratings_agg['tmdbId'] = ratings_agg['tmdbId'].astype(int)
-
-movies = movies.merge(
-    ratings_agg[['tmdbId', 'avg_user_rating', 'num_ratings', 'num_unique_users']], 
-    left_on='id', right_on='tmdbId', how='left'
-)
+# ========== 4. MAPPING DES RATINGS ==========
+print("4. Mapping des ratings...")
+# Plus de ratings.csv, on utilise vote_average et vote_count
+movies['avg_user_rating'] = movies['vote_average']
+movies['num_ratings'] = movies['vote_count']
+movies['num_unique_users'] = movies['vote_count'] # Fallback car manque userId
 
 # ========== 5. PARSING DES GENRES ==========
 print("5. Parsing des genres...")
-movies['genres_list'] = movies['genres'].apply(parse_genres)
-movies['num_genres'] = movies['genres_list'].apply(
-    lambda x: len(x) if isinstance(x, list) else 0
+# Les genres sont maintenant des strings séparées par des virgules
+movies['genres_list'] = movies['genres'].apply(
+    lambda x: [g.strip() for g in str(x).split(',')] if pd.notna(x) else []
 )
+movies['num_genres'] = movies['genres_list'].apply(len)
+
 
 # ========== 6. NETTOYAGE DES COLONNES NUMÉRIQUES ==========
 print("6. Nettoyage des colonnes numériques...")
@@ -92,6 +67,13 @@ print("7. Calculs de prétraitement...")
 
 # Jours depuis sortie
 movies['days_since_release'] = calculate_days_since_release(movies['release_date'])
+movies['log_days_since_release'] = np.log1p(movies['days_since_release'].clip(lower=0))
+
+# Flag Streaming
+streaming_platforms = ['Netflix', 'Amazon', 'Apple', 'Hulu', 'Disney']
+movies['is_streaming'] = movies['production_companies'].apply(
+    lambda x: 1 if isinstance(x, str) and any(p.lower() in x.lower() for p in streaming_platforms) else 0
+)
 
 # Log transformations simples (pour normaliser les distributions)
 movies['log_popularity'] = np.log1p(movies['popularity'])
@@ -120,7 +102,7 @@ genre_flags = [f'has_{g.lower().replace(" ", "_")}' for g in popular_genres]
 final_cols = [
     'id', 'title', 'release_date', 'budget', 'revenue', 'runtime',
     'popularity', 'vote_average', 'vote_count',
-    'days_since_release',
+    'days_since_release', 'log_days_since_release', 'is_streaming',
     'avg_user_rating', 'num_ratings', 'num_unique_users',
     'num_keywords', 'num_genres',
     'log_popularity', 'log_budget', 'log_revenue', 'log_vote_count'
@@ -130,7 +112,7 @@ movies_final = movies[final_cols].dropna(subset=['title', 'release_date'])
 
 # ========== 10. EXPORT ==========
 print("10. Export du dataset nettoyé...")
-output = f"{PROCESSED_DIR}/movies_cleaned_for_ml_{datetime.now():%Y%m%d}.csv"
+output = PROCESSED_DATA_PATH
 movies_final.to_csv(output, index=False)
 
 print("\n" + "=" * 60)
