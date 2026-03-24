@@ -216,11 +216,13 @@ def predict_exploding_games(
 
     # Jeux non tendance selon la cible mais haute proba selon le modèle
     mask       = y_test.values == 0
-    watchlist  = (
-        candidates[mask]
-        .nlargest(top_n, "proba_tendance")
-        .reset_index(drop=True)
-    )
+    watchlist  = candidates[mask]
+    
+    # Suppression des doublons basés sur le nom pour éviter la redondance dans l'UI
+    if "name" in watchlist.columns:
+        watchlist = watchlist.drop_duplicates(subset=["name"])
+        
+    watchlist = watchlist.nlargest(top_n, "proba_tendance").reset_index(drop=True)
 
     genre_cols = [c for c in watchlist.columns if c.startswith("has_")]
 
