@@ -40,8 +40,8 @@
                 </Border>
             </Grid>
 
-            <!-- Barre de recherche + Import -->
-            <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,24">
+            <!-- Barre de recherche  -->
+            <Grid ColumnDefinitions="400,*,Auto" Margin="0,0,0,24">
 
                 <!-- Barre de recherche -->
                 <Border Grid.Column="0"
@@ -83,24 +83,6 @@
                         </TextBox>
                     </Grid>
                 </Border>
-
-                <!-- Bouton Import fichier -->
-                <Button Grid.Column="1"
-                    Name="BtnImport"
-                    Click="OnImportClick"
-                    Background="{DynamicResource NavActive}"
-                    Padding="14,10"
-                    Margin="0,0,8,0"
-                    CornerRadius="8">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <material:MaterialIcon Kind="FileImport"
-                            Width="16" Height="16"
-                            Foreground="{DynamicResource AccentBlue}" />
-                        <TextBlock Text="Importer"
-                            Foreground="{DynamicResource AccentBlue}"
-                            FontSize="12" FontWeight="Bold" />
-                    </StackPanel>
-                </Button>
 
                 <!-- Bouton Analyser -->
                 <Button Grid.Column="2"

@@ -193,21 +193,6 @@
                                     Foreground="White" />
                             </StackPanel>
                         </Button>
-                        <!-- <Button Name="BtnSignup" Click="OnSignupClick"
-                            Margin="0,8,0,0"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            Background="{DynamicResource AccentBlue}"
-                            Padding="0,14">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <material:MaterialIcon Kind="AccountPlus"
-                                    Width="16" Height="16"
-                                    Foreground="{DynamicResource AccentBlue}" />
-                                <TextBlock Text="Créer un compte"
-                                    FontSize="14" FontWeight="Bold"
-                                    Foreground="{DynamicResource AccentBlue}" />
-                            </StackPanel>
-                        </Button> -->
                     </StackPanel>
 
                 </StackPanel>

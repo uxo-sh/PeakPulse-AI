@@ -72,20 +72,6 @@
             </StackPanel>
           </Button>
 
-          <Button Name="BtnMusic" Click="OnMusicClick"
-            Background="Transparent"
-            Margin="12,2" Padding="14,11"
-            HorizontalAlignment="Stretch"
-            HorizontalContentAlignment="Left">
-            <StackPanel Orientation="Horizontal" Spacing="10">
-              <material:MaterialIcon Kind="Music"
-                Width="18" Height="18"
-                Foreground="{DynamicResource TextSecondary}" />
-              <TextBlock Text="Musique" FontSize="13"
-                Foreground="{DynamicResource TextSecondary}" />
-            </StackPanel>
-          </Button>
-
           <!-- Séparateur -->
           <Border Height="1"
             Background="{DynamicResource BorderColor}"
