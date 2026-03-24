@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
-
+#game
 class FeatureEngineeringGames(BaseEstimator, TransformerMixin):
     """
     Feature engineering pour la prédiction de tendance des jeux Steam.
@@ -203,3 +203,134 @@ class FeatureEngineeringGames(BaseEstimator, TransformerMixin):
     def _final_cleanup(self, X: pd.DataFrame) -> pd.DataFrame:
         cols_to_drop = ["app_id", "name", "release_date"]
         return X.drop(columns=[c for c in cols_to_drop if c in X.columns])
+    
+    #MOVIES 
+
+#MOVIES 
+import numpy as np
+import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
+
+
+class FeatureEngineeringMovies(BaseEstimator, TransformerMixin):
+    """
+    Feature engineering SANS leakage pour prédiction de succès film.
+
+    ✔ Utilise uniquement des données disponibles AVANT sortie
+    ✔ Aucune dépendance au revenue, ratings ou popularité
+    ✔ Compatible production (prédiction réelle)
+
+    Features finales :
+    - budget (log)
+    - runtime
+    - saisonnalité (mois sin/cos)
+    - complexité contenu (genres, keywords)
+    - flags genres (has_*)
+    """
+
+    def __init__(self, epsilon=1e-6):
+        self.epsilon = epsilon
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        X = X.copy()
+
+        X = self._handle_time_features(X)
+        X = self._create_budget_features(X)
+        X = self._create_content_features(X)
+        X = self._final_cleanup(X)
+
+        return X
+
+    # ============================================================
+    # 1. FEATURES TEMPORELLES (SAFE)
+    # ============================================================
+    def _handle_time_features(self, X):
+
+        if "release_date" in X.columns:
+            X["release_date"] = pd.to_datetime(X["release_date"], errors="coerce")
+
+            month = X["release_date"].dt.month.fillna(1)
+
+            # Encodage cyclique (important pour saisonnalité)
+            X["month_sin"] = np.sin(2 * np.pi * month / 12)
+            X["month_cos"] = np.cos(2 * np.pi * month / 12)
+
+        return X
+
+    # ============================================================
+    # 2. BUDGET (SAFE et très important)
+    # ============================================================
+    def _create_budget_features(self, X):
+
+        if "budget" in X.columns:
+            X["budget"] = X["budget"].fillna(0)
+
+            # Log pour réduire skew
+            X["log_budget"] = np.log1p(X["budget"])
+
+            # Catégorisation simple (optionnel mais utile)
+            X["is_low_budget"] = (X["budget"] < 1e6).astype(int)
+            X["is_mid_budget"] = ((X["budget"] >= 1e6) & (X["budget"] < 50e6)).astype(int)
+            X["is_high_budget"] = (X["budget"] >= 50e6).astype(int)
+
+        return X
+
+    # ============================================================
+    # 3. CONTENU DU FILM (SAFE)
+    # ============================================================
+    def _create_content_features(self, X):
+
+        # Complexité du film
+        if "num_keywords" in X.columns:
+            X["num_keywords"] = X["num_keywords"].fillna(0)
+
+        if "num_genres" in X.columns:
+            X["num_genres"] = X["num_genres"].fillna(0)
+
+        # Interaction simple (plus de genres + keywords)
+        if {"num_keywords", "num_genres"}.issubset(X.columns):
+            X["content_complexity"] = X["num_keywords"] * X["num_genres"]
+
+        return X
+
+    # ============================================================
+    # 4. CLEAN FINAL (CRITIQUE)
+    # ============================================================
+    def _final_cleanup(self, X):
+
+        cols_to_drop = [
+            # ❌ leakage direct
+            "revenue",
+            "ROI",
+
+            # ❌ leakage post-release
+            "popularity",
+            "vote_count",
+            "vote_average",
+            "avg_user_rating",
+            "num_ratings",
+            "num_unique_users",
+
+            # ❌ dérivés dangereux
+            "log_revenue",
+            "log_popularity",
+            "log_vote_count",
+
+            # ❌ inutiles
+            "id",
+            "title",
+            "release_date",
+        ]
+
+        X = X.drop(columns=[c for c in cols_to_drop if c in X.columns], errors="ignore")
+
+        # Garder uniquement numérique / bool
+        X = X.select_dtypes(include=["number", "bool"])
+
+        # Remplir NaN
+        X = X.fillna(0)
+
+        return X
