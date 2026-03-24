@@ -1,16 +1,49 @@
+"""
+Pipeline sklearn dédié aux films (Movies) — Simple Feature Engineering + RandomForest.
+
+Equivalent à ml_models/model.py mais pour les films au lieu de Steam Games.
+"""
+
+import pandas as pd
+import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
-from trend_engine.trend_detector import FeatureEngineeringGames
-from data_processing.preprocessor import preprocessor
+from sklearn.base import BaseEstimator, TransformerMixin
 
-movies_df, steam_df = preprocessor()
+from trend_engine.trend_detector import FeatureEngineeringMovies
 
-df = steam_df
+
+class FeatureEngineeringMoviesSimple(BaseEstimator, TransformerMixin):
+    """
+    Feature engineering simple pour les films :
+    - Conserve les colonnes numériques
+    - Remplit les NaN avec 0
+    - Prêt pour RandomForest
+    """
+    
+    def __init__(self):
+        pass
+    
+    def fit(self, X, y=None):
+        return self
+    
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        X = X.copy()
+        
+        # Garder SEULEMENT les colonnes numériques ou boolean
+        numeric_cols = X.select_dtypes(include=['number', 'bool']).columns.tolist()
+        X = X[numeric_cols]
+        
+        # Remplir les NaN avec 0
+        X = X.fillna(0)
+        
+        return X
+
 
 pipeline = Pipeline(steps=[
     (
         "feature_engeneering",
-        FeatureEngineeringGames(),
+        FeatureEngineeringMovies(),
     ),
     (
         "model",
@@ -23,10 +56,8 @@ pipeline = Pipeline(steps=[
                                         # sans mémoriser le train set
 
             # ── Contrôle du sur-apprentissage ─────────────────────────
-            min_samples_leaf=5,         # CORRECTION : 10 était trop restrictif
-                                        # avec peu de positifs → manquait des patterns
-                                        # 5 = bon équilibre généralisation / sensibilité
-            min_samples_split=10,       # Nouveau : évite les splits sur 1-2 exemples
+            min_samples_leaf=5,         # Bon équilibre généralisation / sensibilité
+            min_samples_split=10,       # Évite les splits sur 1-2 exemples
 
             # ── Diversité des arbres ───────────────────────────────────
             max_features="sqrt",        # Standard classification : sqrt(nb_features)
@@ -34,7 +65,7 @@ pipeline = Pipeline(steps=[
                                         # → diversité accrue, moins de surapprentissage
 
             # ── Gestion du déséquilibre ────────────────────────────────
-            class_weight="balanced",    # MAINTENU : critique pour 85%/15%
+            class_weight="balanced",    # Critique pour données déséquilibrées
                                         # Poids = n_total / (n_classes × n_class_i)
 
             # ── Reproductibilité ───────────────────────────────────────
