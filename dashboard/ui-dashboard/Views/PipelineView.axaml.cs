@@ -30,134 +30,131 @@ namespace ui_dashboard.Views
             try
             {
                 var client = new HttpClient();
+
                 var json = await client.GetStringAsync(
-                    "http://localhost:8000/api/pipeline/status");
+                    "http://127.0.0.1:8000/api/pipeline/status");
+
                 var doc = JsonDocument.Parse(json);
-                var steps = doc.RootElement.GetProperty("steps");
+
+                if (!doc.RootElement.TryGetProperty("steps", out var steps)
+                    || steps.ValueKind != JsonValueKind.Array)
+                {
+                    Console.WriteLine("steps invalide");
+                    BuildFallbackPipeline();
+                    return;
+                }
 
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 {
-                    var panel = this.FindControl<StackPanel>(
-                        "PipelineSteps");
+                    var panel = this.FindControl<StackPanel>("PipelineSteps");
                     if (panel == null) return;
+
                     panel.Children.Clear();
 
                     foreach (var step in steps.EnumerateArray())
                     {
-                        int num = step.GetProperty("step")
-                            .GetInt32();
-                        string name = step.GetProperty("name")
-                            .GetString() ?? "";
-                        string status = step.GetProperty("status")
-                            .GetString() ?? "";
+                        int num = GetInt(step, "step");
+                        string name = GetString(step, "name");
+                        string status = GetString(step, "status");
 
                         string detail = "";
-                        if (step.TryGetProperty("source",
-                                out var src))
-                            detail = src.GetString() ?? "";
-                        else if (step.TryGetProperty("model",
-                                out var mdl))
-                            detail = $"{mdl.GetString()} — " +
-                                $"{step.GetProperty("accuracy").GetDouble():P0}";
-                        else if (step.TryGetProperty("port",
-                                out var port))
+
+                        if (step.TryGetProperty("source", out var src))
+                            detail = src.ToString();
+
+                        else if (step.TryGetProperty("model", out var mdl)
+                            && step.TryGetProperty("accuracy", out var acc))
+                            detail = $"{mdl} — {GetDouble(acc):P0}";
+
+                        else if (step.TryGetProperty("port", out var port))
                             detail = $"Port {port}";
-                        else if (step.TryGetProperty("records",
-                                out var rec))
-                            detail = $"{rec} records traités";
+
+                        else if (step.TryGetProperty("records", out var rec))
+                            detail = $"{rec} records";
 
                         string extra = "";
-                        if (step.TryGetProperty("examples",
-                                out var examples))
-                        {
-                            var tags = new List<string>();
-                            foreach (var ex in
-                                examples.EnumerateArray())
-                                tags.Add(
-                                    $"{ex.GetProperty("tag").GetString()}" +
-                                    $" → {ex.GetProperty("category").GetString()}");
-                            extra = string.Join(" · ", tags);
-                        }
-                        else if (step.TryGetProperty("algorithms",
-                                out var algos))
-                        {
-                            var list = new List<string>();
-                            foreach (var a in algos.EnumerateArray())
-                                list.Add(a.GetString() ?? "");
-                            extra = string.Join(" · ", list);
-                        }
-                        else if (step.TryGetProperty("features",
-                                out var feats))
-                        {
-                            var list = new List<string>();
-                            foreach (var f in feats.EnumerateArray())
-                                list.Add(f.GetString() ?? "");
-                            extra = string.Join(" · ", list);
-                        }
-                        else if (step.TryGetProperty("endpoints",
-                                out var eps))
-                        {
-                            var list = new List<string>();
-                            foreach (var ep in eps.EnumerateArray())
-                                list.Add(ep.GetString() ?? "");
-                            extra = string.Join(" · ", list);
-                        }
+
+                        extra = ParseArray(step, "examples", e =>
+                            $"{GetString(e, "tag")} → {GetString(e, "category")}");
+
+                        if (string.IsNullOrEmpty(extra))
+                            extra = ParseArray(step, "algorithms", e => e.ToString());
+
+                        if (string.IsNullOrEmpty(extra))
+                            extra = ParseArray(step, "features", e => e.ToString());
+
+                        if (string.IsNullOrEmpty(extra))
+                            extra = ParseArray(step, "endpoints", e => e.ToString());
 
                         panel.Children.Add(
-                            BuildStepCard(num, name,
-                                status, detail, extra));
+                            BuildStepCard(num, name, status, detail, extra));
                     }
                 });
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine(" ERROR: " + ex.Message);
                 BuildFallbackPipeline();
             }
         }
 
-        private void BuildFallbackPipeline()
-        {
-            var steps = new[]
-            {
-                (1, "Collecte données", "ok",
-                    "Steam + TMDb",
-                    "liste jeux, tags, joueurs, reviews"),
-                (2, "Nettoyage", "ok",
-                    "15 420 records",
-                    "drop_duplicates · fillna(0)"),
-                (3, "Classification tags", "ok",
-                    "400 tags → 20 catégories",
-                    "Roguelike → roguelike · Open World → open_world"),
-                (4, "Calcul features", "ok",
-                    "4 features calculées",
-                    "growth_rate · engagement_rate · player_count · review_ratio"),
-                (5, "Trend detection", "ok",
-                    "3 algorithmes actifs",
-                    "trend momentum · early detection · hybrid genre"),
-                (6, "Machine Learning", "ok",
-                    "RandomForest — 92%",
-                    "Input: features · Output: probabilité succès"),
-                (7, "API exposée", "ok",
-                    "Port 8000",
-                    "GET /trending_games · GET /trending_movies · GET /genre_prediction"),
-                (8, "Dashboard C#", "ok",
-                    "Version 1.0.0",
-                    "Top genres gaming · Top genres films · Opportunités marché"),
-            };
+        // =========================
+        //  SAFE JSON HELPERS
+        // =========================
 
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            {
-                var panel = this.FindControl<StackPanel>(
-                    "PipelineSteps");
-                if (panel == null) return;
-                panel.Children.Clear();
-                foreach (var (num, name, status, detail, extra)
-                    in steps)
-                    panel.Children.Add(
-                        BuildStepCard(num, name,
-                            status, detail, extra));
-            });
+        private int GetInt(JsonElement obj, string key)
+        {
+            return obj.TryGetProperty(key, out var el) && el.ValueKind == JsonValueKind.Number
+                ? el.GetInt32()
+                : 0;
         }
+
+        private double GetDouble(JsonElement el)
+        {
+            return el.ValueKind == JsonValueKind.Number
+                ? el.GetDouble()
+                : 0;
+        }
+
+        private string GetString(JsonElement obj, string key)
+        {
+            return obj.TryGetProperty(key, out var el)
+                ? el.ToString()
+                : "";
+        }
+
+        private string ParseArray(JsonElement parent, string key,
+            Func<JsonElement, string> selector)
+        {
+            if (!parent.TryGetProperty(key, out var element))
+                return "";
+
+            if (element.ValueKind != JsonValueKind.Array)
+            {
+                Console.WriteLine($"{key} n'est pas un tableau !");
+                return element.ToString();
+            }
+
+            var list = new List<string>();
+
+            foreach (var item in element.EnumerateArray())
+            {
+                try
+                {
+                    list.Add(selector(item));
+                }
+                catch
+                {
+                    list.Add(item.ToString());
+                }
+            }
+
+            return string.Join(" · ", list);
+        }
+
+        // =========================
+        // UI
+        // =========================
 
         private IBrush GetThemeBrush(string key)
         {
@@ -166,6 +163,7 @@ namespace ui_dashboard.Views
                     Application.Current.ActualThemeVariant,
                     out var res) == true && res is IBrush b)
                 return b;
+
             return Brushes.Transparent;
         }
 
@@ -176,7 +174,8 @@ namespace ui_dashboard.Views
 
             var numBorder = new Border
             {
-                Width = 36, Height = 36,
+                Width = 36,
+                Height = 36,
                 CornerRadius = new CornerRadius(18),
                 Background = GetThemeBrush("NavActive"),
                 Child = new TextBlock
@@ -197,7 +196,8 @@ namespace ui_dashboard.Views
                 Kind = isOk
                     ? MaterialIconKind.CheckCircle
                     : MaterialIconKind.AlertCircle,
-                Width = 18, Height = 18,
+                Width = 18,
+                Height = 18,
                 Foreground = new SolidColorBrush(
                     isOk ? Color.Parse("#4caf50")
                          : Color.Parse("#ff6b6b"))
@@ -208,6 +208,7 @@ namespace ui_dashboard.Views
                 Spacing = 4,
                 Margin = new Thickness(12, 0, 0, 0)
             };
+
             textStack.Children.Add(new TextBlock
             {
                 Text = name,
@@ -230,8 +231,7 @@ namespace ui_dashboard.Views
                     Text = extra,
                     Foreground = GetThemeBrush("AccentBlue"),
                     FontSize = 11,
-                    TextWrapping =
-                        Avalonia.Media.TextWrapping.Wrap
+                    TextWrapping = TextWrapping.Wrap
                 });
 
             var grid = new Grid();
@@ -259,6 +259,35 @@ namespace ui_dashboard.Views
                 BorderThickness = new Thickness(1),
                 Child = grid
             };
+        }
+
+        // =========================
+        // FALLBACK
+        // =========================
+
+        private void BuildFallbackPipeline()
+        {
+            Console.WriteLine("fallback pipeline utilisé");
+
+            var steps = new[]
+            {
+                (1, "Collecte données", "ok", "Steam + TMDb", "tags · joueurs"),
+                (2, "Nettoyage", "ok", "15k records", "drop_duplicates"),
+                (3, "ML", "ok", "RandomForest — 92%", "prediction"),
+                (4, "API", "ok", "Port 8000", "GET endpoints")
+            };
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                var panel = this.FindControl<StackPanel>("PipelineSteps");
+                if (panel == null) return;
+
+                panel.Children.Clear();
+
+                foreach (var s in steps)
+                    panel.Children.Add(
+                        BuildStepCard(s.Item1, s.Item2, s.Item3, s.Item4, s.Item5));
+            });
         }
     }
 }

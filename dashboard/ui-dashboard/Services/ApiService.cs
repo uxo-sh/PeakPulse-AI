@@ -22,13 +22,12 @@ namespace ui_dashboard.Services
             };
         }
 
-        //   Vérifie si l'API Python est en ligne
+        //Vérifie si l'API Python est en ligne
         public async Task<bool> CheckHealthAsync()
         {
             try
             {
-                var response = await _client.GetStringAsync(
-                    $"{BaseUrl}/api/health");
+                var response = await _client.GetStringAsync($"{BaseUrl}/api/health");
                 return response.Contains("ok");
             }
             catch
@@ -37,21 +36,19 @@ namespace ui_dashboard.Services
             }
         }
 
-        //   Récupère les tendances d'un domaine
+        // Récupère les tendances
         public async Task<DomainData?> GetTrendsAsync(string domain)
         {
             try
             {
-                var json = await _client.GetStringAsync(
-                    $"{BaseUrl}/api/trends/{domain}");
+                var json = await _client.GetStringAsync($"{BaseUrl}/api/trends/{domain}");
 
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 };
 
-                var apiData = JsonSerializer.Deserialize<ApiDomainData>(
-                    json, options);
+                var apiData = JsonSerializer.Deserialize<ApiDomainData>(json, options);
 
                 if (apiData == null) return null;
 
@@ -104,7 +101,7 @@ namespace ui_dashboard.Services
         }
     }
 
-    //   Modèle JSON correspondant à l'API Python
+    // Modèle API
     public class ApiDomainData
     {
         public string? Domain { get; set; }

@@ -121,7 +121,7 @@ namespace ui_dashboard
 
         private void ResetButtons()
         {
-            string[] btns = { "BtnGames", "BtnMovies", "BtnMusic", "BtnPipeline", "BtnDatabase" };
+            string[] btns = { "BtnGames", "BtnMovies", "BtnPipeline", "BtnDatabase" };
             foreach (var name in btns)
             {
                 if (this.FindControl<Button>(name) is Button btn)
@@ -186,8 +186,6 @@ namespace ui_dashboard
             => NavigateTo("games");
         private void OnMoviesClick(object sender, RoutedEventArgs e)
             => NavigateTo("movies");
-        private void OnMusicClick(object sender, RoutedEventArgs e)
-            => NavigateTo("music");
         private void OnLogoutClick(object sender, RoutedEventArgs e)
             => ShowLogin();
     }

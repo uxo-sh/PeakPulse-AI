@@ -1,306 +1,185 @@
 using System;
-using System.Globalization;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
-using Avalonia.Input;
 using Avalonia.Media;
 
-namespace ui_dashboard.Controls
+namespace ui_dashboard.Controls;
+
+public partial class LineChart : UserControl
 {
-    public partial class LineChart : UserControl
+    public static readonly StyledProperty<string> TitleProperty      = AvaloniaProperty.Register<LineChart, string>(nameof(Title));
+    public static readonly StyledProperty<string> BadgeProperty      = AvaloniaProperty.Register<LineChart, string>(nameof(Badge), "Live");
+    public static readonly StyledProperty<string> ColorHexProperty   = AvaloniaProperty.Register<LineChart, string>(nameof(ColorHex), "#00d4ff");
+    public static readonly StyledProperty<string> DataPointsProperty = AvaloniaProperty.Register<LineChart, string>(nameof(DataPoints), "60,75,90,85,100,115");
+
+    public string Title      { get => GetValue(TitleProperty);      set => SetValue(TitleProperty, value); }
+    public string Badge      { get => GetValue(BadgeProperty);      set => SetValue(BadgeProperty, value); }
+    public string ColorHex   { get => GetValue(ColorHexProperty);   set => SetValue(ColorHexProperty, value); }
+    public string DataPoints { get => GetValue(DataPointsProperty); set => SetValue(DataPointsProperty, value); }
+
+    private static readonly string[] MonthLabels = { "Oct", "Nov", "Déc", "Jan", "Fév", "Mar" };
+
+    public LineChart() => InitializeComponent();
+
+    protected override void OnLoaded(Avalonia.Interactivity.RoutedEventArgs e)
     {
-        public static readonly StyledProperty<string> TitleProperty =
-            AvaloniaProperty.Register<LineChart, string>(
-                nameof(Title), "Évolution");
-        public static readonly StyledProperty<string> BadgeProperty =
-            AvaloniaProperty.Register<LineChart, string>(
-                nameof(Badge), "Live");
-        public static readonly StyledProperty<string> ColorHexProperty =
-            AvaloniaProperty.Register<LineChart, string>(
-                nameof(ColorHex), "#4fc3f7");
-        public static readonly StyledProperty<string> DataPointsProperty =
-            AvaloniaProperty.Register<LineChart, string>(
-                nameof(DataPoints), "60,75,90,85,100,115");
+        base.OnLoaded(e);
+        Render();
+    }
 
-        public string Title
-        {
-            get => GetValue(TitleProperty);
-            set => SetValue(TitleProperty, value);
-        }
-        public string Badge
-        {
-            get => GetValue(BadgeProperty);
-            set => SetValue(BadgeProperty, value);
-        }
-        public string ColorHex
-        {
-            get => GetValue(ColorHexProperty);
-            set => SetValue(ColorHexProperty, value);
-        }
-        public string DataPoints
-        {
-            get => GetValue(DataPointsProperty);
-            set => SetValue(DataPointsProperty, value);
-        }
+    protected override void OnSizeChanged(SizeChangedEventArgs e)
+    {
+        base.OnSizeChanged(e);
+        Render();
+    }
 
-        private double[] _values = [];
-        private Point[] _pts = [];
-        private double _chartW = 800;
-        private double _chartH = 160;
+    private void Render()
+    {
+        if (this.FindControl<TextBlock>("TitleText") is { } tt) tt.Text = Title;
+        if (this.FindControl<TextBlock>("BadgeText")  is { } bt) bt.Text = Badge;
 
-        public LineChart()
+        var canvas = this.FindControl<Canvas>("LineCanvas");
+        if (canvas == null) return;
+        canvas.Children.Clear();
+
+        double[] vals = DataPoints.Split(',')
+            .Select(s => double.TryParse(s.Trim(), out var v) ? v : 0)
+            .ToArray();
+
+        if (vals.Length < 2) return;
+
+        double W      = canvas.Bounds.Width > 0 ? canvas.Bounds.Width : 500;
+        double H      = 160;
+        double maxVal = vals.Max();
+        double minVal = vals.Min();
+        double range  = maxVal - minVal;
+        if (range == 0) range = 1;
+
+        var color = Color.Parse(ColorHex);
+        double stepX = W / (vals.Length - 1);
+
+        // Grid lines
+        for (int g = 0; g < 4; g++)
         {
-            InitializeComponent();
-        }
-
-        protected override void OnLoaded(
-            Avalonia.Interactivity.RoutedEventArgs e)
-        {
-            base.OnLoaded(e);
-
-            var canvas = this.FindControl<Canvas>("ChartCanvas");
-            if (canvas != null)
+            double y = H / 4 * g;
+            var line = new Line
             {
-                canvas.PointerMoved += OnPointerMoved;
-                canvas.PointerExited += OnPointerExited;
-                canvas.SizeChanged += (s, ev) => BuildChart();
-            }
-
-            BuildChart();
+                StartPoint = new Point(0, y),
+                EndPoint   = new Point(W, y),
+                Stroke     = new SolidColorBrush(Color.Parse("#1e2436")),
+                StrokeThickness = 1,
+            };
+            canvas.Children.Add(line);
         }
 
-        protected override void OnPropertyChanged(
-            AvaloniaPropertyChangedEventArgs change)
+        // Fill area
+        var fillFig = new PathFigure
         {
-            base.OnPropertyChanged(change);
-            if (change.Property == DataPointsProperty ||
-                change.Property == ColorHexProperty   ||
-                change.Property == TitleProperty      ||
-                change.Property == BadgeProperty)
-                BuildChart();
+            StartPoint = new Point(0, H),
+            IsClosed   = true
+        };
+        for (int i = 0; i < vals.Length; i++)
+        {
+            double x = i * stepX;
+            double y = H - (vals[i] - minVal) / range * (H - 20);
+            fillFig.Segments!.Add(new LineSegment { Point = new Point(x, y) });
         }
+        fillFig.Segments!.Add(new LineSegment { Point = new Point((vals.Length - 1) * stepX, H) });
 
-        private void BuildChart()
+        var fillGeo = new PathGeometry();
+        fillGeo.Figures!.Add(fillFig);
+        var fillPath = new Path
         {
-            if (this.FindControl<TextBlock>("ChartTitle")
-                    is TextBlock title)
-                title.Text = Title;
-            if (this.FindControl<TextBlock>("ChartBadge")
-                    is TextBlock badge)
-                badge.Text = Badge;
-
-            var canvas = this.FindControl<Canvas>("ChartCanvas");
-            var yCanvas = this.FindControl<Canvas>("YAxisCanvas");
-            var xGrid = this.FindControl<Grid>("XAxisGrid");
-            if (canvas == null) return;
-
-            canvas.Children.Clear();
-            if (yCanvas != null) yCanvas.Children.Clear();
-
-            var rawPoints = DataPoints.Split(',');
-            _values = new double[rawPoints.Length];
-            for (int i = 0; i < rawPoints.Length; i++)
-                double.TryParse(rawPoints[i],
-                    NumberStyles.Any,
-                    CultureInfo.InvariantCulture,
-                    out _values[i]);
-
-            double max = 130;
-            double min = 40;
-            int count = _values.Length;
-            _chartH = 160;
-
-            _chartW = canvas.Bounds.Width > 10
-                ? canvas.Bounds.Width
-                : 800;
-
-            _pts = new Point[count];
-            for (int i = 0; i < count; i++)
+            Data = fillGeo,
+            Fill = new LinearGradientBrush
             {
-                double x = i * (_chartW / (count - 1));
-                double y = _chartH -
-                    ((_values[i] - min) / (max - min) * _chartH);
-                _pts[i] = new Point(x, y);
-            }
-
-            var color = Color.Parse(ColorHex);
-
-            // ── 1. Lignes de grille ──────────────────────────
-            int gridLines = 5;
-            for (int g = 0; g <= gridLines; g++)
-            {
-                double y = g * (_chartH / gridLines);
-                canvas.Children.Add(new Line
+                StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+                EndPoint   = new RelativePoint(0, 1, RelativeUnit.Relative),
+                GradientStops =
                 {
-                    StartPoint = new Point(0, y),
-                    EndPoint = new Point(_chartW, y),
-                    Stroke = new SolidColorBrush(
-                        Color.Parse("#1e2d40")),
-                    StrokeThickness = 0.5,
-                    StrokeDashArray =
-                        new Avalonia.Collections
-                            .AvaloniaList<double> { 5, 5 }
-                });
-
-                if (yCanvas != null)
-                {
-                    double val = max -
-                        g * ((max - min) / gridLines);
-                    var lbl = new TextBlock
-                    {
-                        Text = ((int)val).ToString(),
-                        FontSize = 10,
-                        Foreground = new SolidColorBrush(
-                            Color.Parse("#3a4a5c")),
-                    };
-                    Canvas.SetLeft(lbl, 0);
-                    Canvas.SetTop(lbl, y - 8);
-                    yCanvas.Children.Add(lbl);
+                    new GradientStop(Color.FromArgb(60, color.R, color.G, color.B), 0),
+                    new GradientStop(Color.FromArgb(0,  color.R, color.G, color.B), 1),
                 }
             }
+        };
+        canvas.Children.Add(fillPath);
 
-            // ── 2. Zone remplie (au dessus de la grille) ────
-            var fillGeo = new StreamGeometry();
-            using (var ctx = fillGeo.Open())
-            {
-                ctx.BeginFigure(
-                    new Point(_pts[0].X, _chartH), false);
-                ctx.LineTo(_pts[0]);
-                for (int i = 1; i < _pts.Length; i++)
-                    ctx.LineTo(_pts[i]);
-                ctx.LineTo(
-                    new Point(_pts[^1].X, _chartH));
-                ctx.EndFigure(true);
-            }
-            canvas.Children.Add(new Path
-            {
-                Data = fillGeo,
-                // ✅ Opacité augmentée pour mieux voir la couleur
-                Fill = new SolidColorBrush(Color.FromArgb(
-                    80, color.R, color.G, color.B)),
-                Stroke = Brushes.Transparent,
-                StrokeThickness = 0
-            });
-
-            // ── 3. Ligne principale ──────────────────────────
-            for (int i = 0; i < _pts.Length - 1; i++)
-            {
-                canvas.Children.Add(new Line
-                {
-                    StartPoint = _pts[i],
-                    EndPoint = _pts[i + 1],
-                    Stroke = new SolidColorBrush(color),
-                    StrokeThickness = 2.5,
-                    StrokeLineCap = PenLineCap.Round
-                });
-            }
-
-            // ── 4. Points sur la courbe ──────────────────────
-            foreach (var pt in _pts)
-            {
-                var outer = new Ellipse
-                {
-                    Width = 10, Height = 10,
-                    Fill = new SolidColorBrush(color),
-                    Stroke = new SolidColorBrush(
-                        Color.FromArgb(80,
-                            color.R, color.G, color.B)),
-                    StrokeThickness = 3
-                };
-                Canvas.SetLeft(outer, pt.X - 5);
-                Canvas.SetTop(outer, pt.Y - 5);
-                canvas.Children.Add(outer);
-
-                var inner = new Ellipse
-                {
-                    Width = 5, Height = 5,
-                    Fill = Brushes.White
-                };
-                Canvas.SetLeft(inner, pt.X - 2.5);
-                Canvas.SetTop(inner, pt.Y - 2.5);
-                canvas.Children.Add(inner);
-            }
-
-            // ── 5. Labels axe X ─────────────────────────────
-            if (xGrid != null)
-            {
-                xGrid.ColumnDefinitions.Clear();
-                xGrid.Children.Clear();
-                string[] months =
-                    { "Oct","Nov","Déc","Jan","Fév","Mar" };
-                for (int i = 0; i < months.Length; i++)
-                {
-                    xGrid.ColumnDefinitions.Add(
-                        new ColumnDefinition(GridLength.Star));
-                    var lbl = new TextBlock
-                    {
-                        Text = months[i],
-                        FontSize = 10,
-                        Foreground = i == months.Length - 1
-                            ? new SolidColorBrush(
-                                Color.Parse(ColorHex))
-                            : new SolidColorBrush(
-                                Color.Parse("#3a4a5c")),
-                        FontWeight = i == months.Length - 1
-                            ? FontWeight.Bold
-                            : FontWeight.Normal,
-                        HorizontalAlignment =
-                            Avalonia.Layout.HorizontalAlignment
-                                .Center
-                    };
-                    Grid.SetColumn(lbl, i);
-                    xGrid.Children.Add(lbl);
-                }
-            }
-        }
-
-        private void OnPointerMoved(object? sender,
-            PointerEventArgs e)
+        // Line
+        var lineFig = new PathFigure { IsClosed = false };
+        for (int i = 0; i < vals.Length; i++)
         {
-            if (_pts.Length == 0) return;
-            var canvas = this.FindControl<Canvas>("ChartCanvas");
-            var tooltip = this.FindControl<Border>("TooltipBorder");
-            var tooltipText =
-                this.FindControl<TextBlock>("TooltipText");
-            if (canvas == null || tooltip == null) return;
-
-            var pos = e.GetPosition(canvas);
-            int closest = 0;
-            double minDist = double.MaxValue;
-            for (int i = 0; i < _pts.Length; i++)
-            {
-                double dist = Math.Abs(_pts[i].X - pos.X);
-                if (dist < minDist)
-                {
-                    minDist = dist;
-                    closest = i;
-                }
-            }
-
-            if (minDist < 60)
-            {
-                if (tooltipText != null)
-                    tooltipText.Text =
-                        $"Score : {(int)_values[closest]}";
-                tooltip.IsVisible = true;
-                Canvas.SetLeft(tooltip,
-                    _pts[closest].X + 10);
-                Canvas.SetTop(tooltip,
-                    _pts[closest].Y - 30);
-            }
+            double x = i * stepX;
+            double y = H - (vals[i] - minVal) / range * (H - 20);
+            if (i == 0)
+                lineFig.StartPoint = new Point(x, y);
             else
+                lineFig.Segments!.Add(new LineSegment { Point = new Point(x, y) });
+        }
+        var lineGeo = new PathGeometry();
+        lineGeo.Figures!.Add(lineFig);
+        canvas.Children.Add(new Path
+        {
+            Data            = lineGeo,
+            Stroke          = new SolidColorBrush(color),
+            StrokeThickness = 2.5,
+        });
+
+        // Dots
+        for (int i = 0; i < vals.Length; i++)
+        {
+            double x = i * stepX;
+            double y = H - (vals[i] - minVal) / range * (H - 20);
+            bool   isLast = i == vals.Length - 1;
+
+            if (isLast)
             {
-                tooltip.IsVisible = false;
+                // Glow ring
+                var glow = new Ellipse
+                {
+                    Width  = 16, Height = 16,
+                    Fill   = new SolidColorBrush(Color.FromArgb(40, color.R, color.G, color.B)),
+                };
+                Canvas.SetLeft(glow, x - 8);
+                Canvas.SetTop(glow,  y - 8);
+                canvas.Children.Add(glow);
             }
+
+            var dot = new Ellipse
+            {
+                Width  = isLast ? 8 : 5,
+                Height = isLast ? 8 : 5,
+                Fill   = isLast
+                    ? new SolidColorBrush(color)
+                    : new SolidColorBrush(Color.FromArgb(160, color.R, color.G, color.B)),
+            };
+            Canvas.SetLeft(dot, x - (isLast ? 4 : 2.5));
+            Canvas.SetTop(dot,  y - (isLast ? 4 : 2.5));
+            canvas.Children.Add(dot);
         }
 
-        private void OnPointerExited(object? sender,
-            PointerEventArgs e)
+        // Labels
+        var labelsGrid = this.FindControl<Grid>("LabelsGrid");
+        if (labelsGrid == null) return;
+        labelsGrid.Children.Clear();
+        labelsGrid.ColumnDefinitions.Clear();
+
+        for (int i = 0; i < vals.Length; i++)
         {
-            var tooltip =
-                this.FindControl<Border>("TooltipBorder");
-            if (tooltip != null) tooltip.IsVisible = false;
+            labelsGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+            var lbl = new TextBlock
+            {
+                Text          = i < MonthLabels.Length ? MonthLabels[i] : "",
+                Foreground    = i == vals.Length - 1
+                    ? new SolidColorBrush(color)
+                    : new SolidColorBrush(Color.Parse("#4a5568")),
+                FontSize      = 11,
+                TextAlignment = Avalonia.Media.TextAlignment.Center,
+                FontWeight    = i == vals.Length - 1 ? FontWeight.Bold : FontWeight.Normal,
+            };
+            Grid.SetColumn(lbl, i);
+            labelsGrid.Children.Add(lbl);
         }
     }
 }
