@@ -113,6 +113,114 @@ def find_threshold_precision_target(y_true, y_proba, target_precision=0.6):
 
 
 # ============================================================
+# 🔮 ANALYSE DES GENRES TENDANCE — MOVIES
+# ============================================================
+
+def analyze_trending_genres_movies(
+    X_test: pd.DataFrame,
+    y_pred: np.ndarray,
+    y_proba: np.ndarray,
+) -> pd.DataFrame:
+    """
+    Analyse les genres par probabilité moyenne et ratio de prédictions tendance.
+    Identique à analyze_trending_genres() dans le pipeline games,
+    adapté aux colonnes has_* issues du feature engineering movies.
+
+    Genres attendus :
+        has_drama, has_comedy, has_action, has_adventure, has_thriller,
+        has_romance, has_horror, has_science_fiction, has_crime,
+        has_animation, has_fantasy, has_mystery, has_family, has_documentary
+
+    Retourne :
+        pd.DataFrame : stats avec colonnes Genre, Count, Avg_Proba,
+                       Trend_Ratio, Avg_Proba_Trend, Trend_Score.
+                       Trié par Trend_Score décroissant.
+    """
+    print(f"\n{'='*60}")
+    print("🔮 ANALYSE DES GENRES TENDANCE — FILMS")
+    print(f"{'='*60}")
+
+    empty_df = pd.DataFrame(columns=[
+        "Genre", "Count", "Avg_Proba", "Trend_Ratio",
+        "Avg_Proba_Trend", "Trend_Score"
+    ])
+
+    try:
+        genre_cols = [c for c in X_test.columns if c.startswith("has_")]
+        if not genre_cols:
+            print("⚠️  Aucune colonne has_XXX trouvée dans X_test.")
+            print("    → Vérifier que LEAK_COLS ne filtre pas les has_*")
+            return empty_df
+
+        print(f"📌 {len(genre_cols)} genres détectés\n")
+
+        df          = X_test.copy()
+        df["pred"]  = y_pred
+        df["proba"] = y_proba
+
+        rows = []
+        for col in genre_cols:
+            sub = df[df[col] == 1]
+            if len(sub) == 0:
+                continue
+            count           = len(sub)
+            avg_proba       = sub["proba"].mean()
+            trend_ratio     = sub["pred"].mean()
+            trend_sub       = sub[sub["pred"] == 1]
+            avg_proba_trend = trend_sub["proba"].mean() if len(trend_sub) > 0 else 0.0
+            trend_score     = avg_proba * np.log1p(count)
+            rows.append({
+                "Genre":           col.replace("has_", "").replace("_", " ").title(),
+                "Count":           count,
+                "Avg_Proba":       avg_proba,
+                "Trend_Ratio":     trend_ratio,
+                "Avg_Proba_Trend": avg_proba_trend,
+                "Trend_Score":     trend_score,
+            })
+
+        stats     = pd.DataFrame(rows).sort_values("Trend_Score", ascending=False)
+        max_score = stats["Trend_Score"].max()
+
+        print("🏆 TOP 10 GENRES ÉMERGENTS:")
+        print(f"{'Rang':<5}│{'Genre':<22}│{'Count':>6}│{'Proba moy':>10}│{'% Tendance':>11}│ Score")
+        print("─" * 68)
+        for i, (_, r) in enumerate(stats.head(10).iterrows()):
+            nb_f = int(r["Trend_Score"] / (max_score / 5)) if max_score > 0 else 0
+            bar  = "🔥" * min(5, nb_f)
+            print(
+                f"{i+1:<5}│{r['Genre']:<22}│{r['Count']:>6.0f}│"
+                f"{r['Avg_Proba']:>10.4f}│{r['Trend_Ratio']:>10.2%} │ {bar}"
+            )
+
+        print("\n📈 DÉTAILS DES 3 MEILLEURS GENRES:\n")
+        for i, (_, r) in enumerate(stats.head(3).iterrows()):
+            print(f"  {i+1}️⃣  {r['Genre'].upper()}")
+            print(f"     • Films dans ce genre       : {r['Count']:.0f}")
+            print(f"     • Proba tendance moyenne    : {r['Avg_Proba']:.4f} ({r['Avg_Proba']*100:.2f}%)")
+            print(f"     • % prédits tendance        : {r['Trend_Ratio']:.2%}")
+            print(f"     • Proba moy (prédits tend.) : {r['Avg_Proba_Trend']:.4f}")
+            print(f"     • Score tendance            : {r['Trend_Score']:.4f}\n")
+
+        print("⭐ TOP 5 PAR PROBABILITÉ MOYENNE:")
+        print(f"{'Rang':<5}│{'Genre':<22}│{'Proba moy':>10}")
+        print("─" * 42)
+        for i, (_, r) in enumerate(stats.nlargest(5, "Avg_Proba").iterrows()):
+            print(f"{i+1:<5}│{r['Genre']:<22}│{r['Avg_Proba']:>10.4f}")
+
+        print("\n💰 TOP 5 PAR % PRÉDIT TENDANCE:")
+        print(f"{'Rang':<5}│{'Genre':<22}│{'% Tendance':>11}")
+        print("─" * 42)
+        for i, (_, r) in enumerate(stats.nlargest(5, "Trend_Ratio").iterrows()):
+            print(f"{i+1:<5}│{r['Genre']:<22}│{r['Trend_Ratio']:>10.2%}")
+
+        return stats.reset_index(drop=True)
+
+    except Exception as e:
+        print(f"⚠️  Erreur analyse genres : {e}")
+        return empty_df
+
+
+# ============================================================
 # 🧪 TEST PRINCIPAL
 # ============================================================
 
@@ -196,20 +304,27 @@ def test_model_movies_v2() -> dict:
                 f"Budget: {budget:.1f}M$"
             )
 
+    # ============================================================
+    # 🔮 GENRES TENDANCE
+    # ============================================================
+
+    trending_genres_df = analyze_trending_genres_movies(X_test, y_pred, y_proba)
+
     # Valeurs de retour enrichies pour utilisation externe
     return {
-        "recall": float(recall_score(y_test, y_pred)),
-        "precision": float(precision_score(y_test, y_pred)),
-        "f1": float(f1_score(y_test, y_pred)),
-        "auc": float(roc_auc_score(y_test, y_proba)),
+        "recall":            float(recall_score(y_test, y_pred)),
+        "precision":         float(precision_score(y_test, y_pred)),
+        "f1":                float(f1_score(y_test, y_pred)),
+        "auc":               float(roc_auc_score(y_test, y_proba)),
         "optimal_threshold": thr,
         "threshold_details": threshold_details,
-        "exploding_movies": watchlist_full,
-        "y_proba": y_proba,
-        "y_pred": y_pred,
-        "y_test": y_test,
-        "X_test": X_test,
-        "signal_used": signal
+        "exploding_movies":  watchlist_full,
+        "trending_genres":   trending_genres_df,
+        "y_proba":           y_proba,
+        "y_pred":            y_pred,
+        "y_test":            y_test,
+        "X_test":            X_test,
+        "signal_used":       signal
     }
 
 
