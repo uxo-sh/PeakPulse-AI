@@ -92,23 +92,36 @@ def find_threshold_precision_target(y_true, y_proba, target_precision=0.6):
     if valid.sum() > 0:
         # Parmi les seuils qui respectent la précision, prendre le meilleur F1
         f1_valid = np.where(valid, f1_scores, 0)
-        best_idx = np.argmax(f1_valid)
+        best_idx = int(np.argmax(f1_valid))
         best_thr = float(thresholds[best_idx])
-        print(f"[THRESHOLD] Precision ≥ {target_precision} & F1={f1_scores[best_idx]:.4f} → seuil = {best_thr:.4f}")
+        best_f1  = float(f1_scores[best_idx])
+        print(f"[THRESHOLD] Precision ≥ {target_precision} & F1={best_f1:.4f} → seuil = {best_thr:.4f}")
     else:
         # Fallback : maximiser F1 sans contrainte de précision
-        best_idx = np.argmax(f1_scores)
+        best_idx = int(np.argmax(f1_scores))
         best_thr = float(thresholds[best_idx])
-        print(f"[THRESHOLD] Fallback F1-max={f1_scores[best_idx]:.4f} → seuil = {best_thr:.4f}")
+        best_f1  = float(f1_scores[best_idx])
+        print(f"[THRESHOLD] Fallback F1-max={best_f1:.4f} → seuil = {best_thr:.4f}")
 
-    return best_thr
+    return {
+        "threshold": best_thr,
+        "f1": best_f1,
+        "precisions": precisions,
+        "recalls": recalls,
+        "thresholds": thresholds,
+    }
 
 
 # ============================================================
 # 🧪 TEST PRINCIPAL
 # ============================================================
 
-def test_model_movies_v2():
+def test_model_movies_v2() -> dict:
+    """
+    Test du modèle sur les films.
+    Retourne un dict complet de statistiques et DataFrames,
+    à l'image de ce qui se fait pour les jeux.
+    """
     print("\n" + "=" * 60)
     print("[FILM] TREND ENGINE V2 (PRECISION MODE)")
     print("=" * 60)
@@ -139,7 +152,8 @@ def test_model_movies_v2():
     y_proba = pipeline.predict_proba(X_test)[:, 1]
 
     # 5. Seuil optimisé (PRECISION MODE)
-    thr = find_threshold_precision_target(y_test, y_proba, target_precision=0.45)
+    threshold_details = find_threshold_precision_target(y_test, y_proba, target_precision=0.45)
+    thr = threshold_details["threshold"]
 
     y_pred = (y_proba >= thr).astype(int)
 
@@ -159,32 +173,43 @@ def test_model_movies_v2():
     # 🎯 WATCHLIST QUALITÉ
     # ============================================================
 
-    results = test.copy()
+    results = test.copy().reset_index(drop=True)
     results["proba"] = y_proba
     results["trend_score"] = (y_proba * 100).round(1)
 
-    watchlist = results[results["proba"] >= thr]
-    watchlist = watchlist.sort_values("proba", ascending=False).head(10)
+    # On retourne tous les films potentiellement en tendance
+    watchlist_full = results[results["proba"] >= thr].sort_values("proba", ascending=False)
+    watchlist_top10 = watchlist_full.head(10)
 
     print("\n[WATCHLIST QUALITÉ]")
 
-    if len(watchlist) == 0:
+    if len(watchlist_top10) == 0:
         print("⚠️ Aucun film ne passe le seuil de précision.")
     else:
-        for i, (_, row) in enumerate(watchlist.iterrows()):
+        for i, (_, row) in enumerate(watchlist_top10.iterrows()):
+            title = str(row.get('title', 'N/A'))[:30]
+            budget = row.get('budget', 0) / 1e6
             print(
-                f"{i+1}. {row['title'][:30]:<30} | "
+                f"{i+1}. {title:<30} | "
                 f"Score: {row['trend_score']:>5.1f}/100 | "
                 f"Proba: {row['proba']:.2%} | "
-                f"Budget: {row['budget']/1e6:.1f}M$"
+                f"Budget: {budget:.1f}M$"
             )
 
+    # Valeurs de retour enrichies pour utilisation externe
     return {
-        "recall": recall_score(y_test, y_pred),
-        "precision": precision_score(y_test, y_pred),
-        "f1": f1_score(y_test, y_pred),
-        "auc": roc_auc_score(y_test, y_proba),
-        "threshold": thr,
+        "recall": float(recall_score(y_test, y_pred)),
+        "precision": float(precision_score(y_test, y_pred)),
+        "f1": float(f1_score(y_test, y_pred)),
+        "auc": float(roc_auc_score(y_test, y_proba)),
+        "optimal_threshold": thr,
+        "threshold_details": threshold_details,
+        "exploding_movies": watchlist_full,
+        "y_proba": y_proba,
+        "y_pred": y_pred,
+        "y_test": y_test,
+        "X_test": X_test,
+        "signal_used": signal
     }
 
 
