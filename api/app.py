@@ -18,13 +18,13 @@ GAMES_DATA = {
     "domain": "games",
     "title": "Jeux vidéo — Tendances",
     "subtitle": "Steam · SteamDB · SteamCharts",
-    "kpi_genres": "24",
-    "kpi_score": "78%",
-    "kpi_opportunities": "7",
-    "kpi_precision": "9.2",
+    "kpi_genres": "87%",  # Recall
+    "kpi_score": "70%",   # Precision
+    "kpi_opportunities": "78%", # F1 Score
+    "kpi_precision": "8.4", # PR-AUC (*10)
     "chart_badge": "Steam · Live",
     "bar_color": "#4fc3f7",
-    "heights": "60,75,90,85,100,115",
+    "heights": "0,0,0,0,0,0",
     "opportunity_count": "7 nouvelles",
     "ia_recommendation": "Roguelike et Open World en forte hausse sur Steam. Fenêtre optimale : 2 à 6 semaines.",
     "genres": [
@@ -39,13 +39,13 @@ MOVIES_DATA = {
     "domain": "movies",
     "title": "Cinéma — Tendances",
     "subtitle": "TMDb · IMDb · Métriques sociales",
-    "kpi_genres": "18",
-    "kpi_score": "81%",
-    "kpi_opportunities": "5",
-    "kpi_precision": "8.9",
+    "kpi_genres": "72%",  # Recall
+    "kpi_score": "46%",   # Precision
+    "kpi_opportunities": "56%", # F1 Score
+    "kpi_precision": "9.4", # PR-AUC (*10)
     "chart_badge": "TMDb · Live",
     "bar_color": "#7c4dff",
-    "heights": "55,70,80,95,100,112",
+    "heights": "0,0,0,0,0,0",
     "opportunity_count": "5 nouvelles",
     "ia_recommendation": "Thrillers psychologiques et animation adulte en forte croissance. Fenêtre optimale : 1 à 3 mois.",
     "genres": [
@@ -66,7 +66,7 @@ MUSIC_DATA = {
     "kpi_precision": "8.7",
     "chart_badge": "Spotify · Live",
     "bar_color": "#ff6b6b",
-    "heights": "50,65,80,95,105,118",
+    "heights": "0,0,0,0,0,0",
     "opportunity_count": "9 nouvelles",
     "ia_recommendation": "Afrobeats et Hyperpop dominent les charts. Fort engagement TikTok. Fenêtre optimale : 3 à 8 semaines.",
     "genres": [
@@ -341,6 +341,124 @@ def pipeline_status():
             }
         ]
     }
+
+def format_to_domain_data(domain: str, results: dict) -> dict:
+    import pandas as pd
+
+    if results.get("error"):
+        return {"error": str(results["error"])}
+
+    # ── Extract all metrics ──────────────────────────────────────
+    f1        = float(results.get("f1") or 0)
+    roc_auc   = float(results.get("roc_auc") or results.get("auc") or 0)
+    pr_auc    = float(results.get("pr_auc") or 0)
+    accuracy  = float(results.get("accuracy") or 0)
+    precision = float(results.get("precision") or 0)
+    recall    = float(results.get("recall") or 0)
+
+    # Games pipeline stores precision/recall inside confusion_matrix_optimal
+    cm_opt = results.get("confusion_matrix_optimal")
+    if cm_opt and not precision:
+        precision = float(cm_opt.get("precision", 0))
+        recall    = float(cm_opt.get("recall", 0))
+
+    # ── Trending genres → genres array (ONLY genres) ──────────────
+    genres_df = results.get("trending_genres")
+    genre_items = []
+    n_genres = 0
+    if genres_df is not None and not genres_df.empty:
+        n_genres = int(len(genres_df))
+        mean_score = float(genres_df["Trend_Score"].mean())
+        colors = ["#4fc3f7", "#7c4dff", "#ff6b6b", "#4caf50"]
+        for i, (_, row) in enumerate(genres_df.head(10).iterrows()):
+            score_pct = float(row["Trend_Ratio"]) * 100
+            trend_label = "↑ En hausse" if float(row["Trend_Score"]) > mean_score else "→ Stable"
+            badge = "Lancer maintenant" if score_pct > 80 else ("Surveiller" if score_pct > 50 else "En émergence")
+            genre_items.append({
+                "name": str(row["Genre"]),
+                "score": f"{score_pct:.0f}%",
+                "trend_label": trend_label,
+                "badge": badge,
+                "color_hex": colors[i % 4],
+                "is_alternate": bool(i % 2 == 0),
+                "bar_width": int(150 + (score_pct / 100) * 70)
+            })
+
+    # ── Exploding games/movies → separate watchlist array ─────────
+    exp_data = results.get("exploding_games", results.get("exploding_movies"))
+    watchlist_items = []
+    opportunities = 0
+    if exp_data is not None and isinstance(exp_data, pd.DataFrame) and not exp_data.empty:
+        opportunities = int(len(exp_data))
+        colors_w = ["#4fc3f7", "#7c4dff", "#ff6b6b", "#4caf50"]
+        for i, (_, row) in enumerate(exp_data.head(10).iterrows()):
+            if domain == "games":
+                name  = str(row.get("name", "N/A"))[:36]
+                proba = float(row.get("proba_tendance", 0))
+            else:
+                name  = str(row.get("title", "N/A"))[:36]
+                proba = float(row.get("proba", 0))
+            score_pct = proba * 100
+            badge = "🔥 Lancer" if proba > 0.85 else ("Surveiller" if proba > 0.5 else "Émergent")
+            watchlist_items.append({
+                "name": name,
+                "score": f"{score_pct:.0f}%",
+                "trend_label": f"↑ Proba {proba:.2f}",
+                "badge": badge,
+                "color_hex": colors_w[i % 4],
+                "is_alternate": bool(i % 2 == 0),
+                "bar_width": int(150 + proba * 70)
+            })
+
+    # ── Build rich IA recommendation ──────────────────────────────
+    ia_parts = ["Analyse ML terminée."]
+    if f1:        ia_parts.append(f"F1: {f1:.2f}")
+    if roc_auc:   ia_parts.append(f"ROC-AUC: {roc_auc:.2f}")
+    if pr_auc:    ia_parts.append(f"PR-AUC: {pr_auc:.2f}")
+    if precision: ia_parts.append(f"Précision: {precision:.2f}")
+    if recall:    ia_parts.append(f"Recall: {recall:.2f}")
+    if n_genres:  ia_parts.append(f"{n_genres} genres analysés")
+    if opportunities: ia_parts.append(f"{opportunities} opportunités")
+    ia_text = " · ".join(ia_parts)
+
+    # ── KPI mapping (matches Rename: Recall, Precision, F1, AUC) ──
+    # kpi_genres        → Recall %
+    # kpi_score         → Precision %
+    # kpi_opportunities → F1 Score %
+    # kpi_precision     → PR-AUC scaled to /10
+    return {
+        "domain": domain,
+        "title": f"{'Jeux vidéo' if domain == 'games' else 'Cinéma'} — IA Analyse",
+        "subtitle": "Modèle ML (Pipeline complet)",
+        "kpi_genres": f"{recall * 100:.0f}%",
+        "kpi_score": f"{precision * 100:.0f}%",
+        "kpi_opportunities": f"{f1 * 100:.0f}%",
+        "kpi_precision": f"{pr_auc * 10:.1f}",
+        "chart_badge": "ML · Pipeline",
+        "bar_color": "#7c4dff" if domain == "movies" else "#4fc3f7",
+        "heights": "0,0,0,0,0,0",
+        "opportunity_count": f"{opportunities} nouvelles",
+        "ia_recommendation": ia_text,
+        "genres": genre_items,
+        "watchlist": watchlist_items,
+        "source": "ml_pipeline"
+    }
+
+
+
+
+@app.get("/api/analyze/{domain}")
+def analyze_domain(domain: str):
+    if domain == "games":
+        from test_pipeline import test_feature_engineering_games
+        res = test_feature_engineering_games()
+        return format_to_domain_data(domain, res)
+    elif domain == "movies":
+        from test_pipeline_movie import test_model_movies_v2
+        res = test_model_movies_v2()
+        return format_to_domain_data(domain, res)
+    else:
+        return {"error": "Domain non supporté pour l'analyse"}
 
 if __name__ == "__main__":
     import uvicorn

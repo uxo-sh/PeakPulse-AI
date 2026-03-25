@@ -109,19 +109,19 @@
             <!-- KPI Cards -->
             <Grid ColumnDefinitions="*,*,*,*" Margin="0,0,0,24">
                 <c:KpiCard Grid.Column="0" Classes="fadeIn" Name="KpiGenres"
-                    Margin="0,0,8,0" Label="DÉTECTÉS"
+                    Margin="0,0,8,0" Label="RECALL"
                     Trend="↑" SubLabel="ce mois"
                     ColorHex="#4fc3f7" IconKind="ChartBar" />
                 <c:KpiCard Grid.Column="1" Classes="fadeIn1" Name="KpiScore"
-                    Margin="4,0" Label="SCORE MOYEN"
+                    Margin="4,0" Label="PRECISION"
                     Trend="↑" SubLabel="vs semaine"
                     ColorHex="#7c4dff" IconKind="StarCircle" />
                 <c:KpiCard Grid.Column="2" Classes="fadeIn2" Name="KpiOpportunities"
-                    Margin="4,0" Label="OPPORTUNITÉS"
+                    Margin="4,0" Label="F1 SCORE"
                     Trend="↑" SubLabel="nouvelles"
                     ColorHex="#ff6b6b" IconKind="Lightbulb" />
                 <c:KpiCard Grid.Column="3" Classes="fadeIn3" Name="KpiPrecision"
-                    Margin="8,0,0,0" Label="PRÉCISION IA"
+                    Margin="8,0,0,0" Label="AUC (P/R)"
                     Trend="sur 10" SubLabel="RandomForest"
                     ColorHex="#4caf50" IconKind="Brain" />
             </Grid>
@@ -133,29 +133,9 @@
                 Title="Évolution du score — 6 derniers mois"
                 Badge="Live"
                 ColorHex="#4fc3f7"
-                DataPoints="60,75,90,85,100,115" />
+                DataPoints="0,0,0,0,0,0" />
 
-            <!-- Circle bars -->
-            <Grid ColumnDefinitions="*,*,*" Margin="0,0,0,24">
-                <c:CircleBar Grid.Column="0" Classes="fadeIn1" Name="CircleScore"
-                    Margin="0,0,8,0"
-                    Title="SCORE GLOBAL"
-                    Value="78" MaxValue="100"
-                    ColorHex="#4fc3f7"
-                    Label="sur 100 points" />
-                <c:CircleBar Grid.Column="1" Classes="fadeIn2" Name="CirclePrecision"
-                    Margin="4,0"
-                    Title="PRÉCISION IA"
-                    Value="92" MaxValue="100"
-                    ColorHex="#4caf50"
-                    Label="RandomForest" />
-                <c:CircleBar Grid.Column="2" Classes="fadeIn3" Name="CircleOpportunity"
-                    Margin="8,0,0,0"
-                    Title="OPPORTUNITÉS"
-                    Value="70" MaxValue="100"
-                    ColorHex="#ff6b6b"
-                    Label="fenêtre optimale" />
-            </Grid>
+            <!-- Circle bars (REMOVED) -->
 
             <!-- Bar chart + Top genres -->
             <Grid ColumnDefinitions="*,300" Margin="0,0,0,24">
@@ -223,6 +203,50 @@
                 </StackPanel>
             </Border>
 
+            <!-- Watchlist — Jeux/Films qui vont exploser -->
+            <Border Background="{DynamicResource CardBg}"
+                CornerRadius="12" Padding="24"
+                Margin="0,0,0,24"
+                BorderBrush="{DynamicResource BorderColor}"
+                BorderThickness="1"
+                Name="WatchlistSection"
+                IsVisible="False">
+                <StackPanel>
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+                        <StackPanel Grid.Column="0"
+                            Orientation="Horizontal" Spacing="8">
+                            <material:MaterialIcon Kind="Fire"
+                                Width="16" Height="16"
+                                Foreground="#ff6b6b" />
+                            <TextBlock Name="WatchlistTitle"
+                                Text="🔥 Watchlist — À surveiller"
+                                Foreground="{DynamicResource TextPrimary}"
+                                FontSize="14" FontWeight="Bold" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Background="#1a1a3a"
+                            CornerRadius="6" Padding="10,4">
+                            <TextBlock Name="WatchlistBadge"
+                                Foreground="#7c4dff" FontSize="11" />
+                        </Border>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,100,120,160"
+                        Margin="16,0,0,8">
+                        <TextBlock Grid.Column="0" Text="Titre"
+                            Foreground="{DynamicResource TextMuted}"
+                            FontSize="11" />
+                        <TextBlock Grid.Column="1" Text="Proba"
+                            Foreground="{DynamicResource TextMuted}"
+                            FontSize="11" />
+                        <TextBlock Grid.Column="2" Text="Tendance"
+                            Foreground="{DynamicResource TextMuted}"
+                            FontSize="11" />
+                        <TextBlock Grid.Column="3" Text="Recommandation"
+                            Foreground="{DynamicResource TextMuted}"
+                            FontSize="11" />
+                    </Grid>
+                    <StackPanel Name="WatchlistRowsPanel" />
+                </StackPanel>
+            </Border>
             <!-- Recommandation IA -->
             <Border Background="{DynamicResource CardBg}"
                 CornerRadius="12" Padding="24"

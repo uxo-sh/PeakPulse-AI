@@ -64,6 +64,22 @@ namespace ui_dashboard.Controls
             DrawCircle();
         }
 
+        // Re-draw when any property changes (Value, ColorHex, etc.)
+        protected override void OnPropertyChanged(
+            AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+            if (change.Property == ValueProperty   ||
+                change.Property == ColorHexProperty ||
+                change.Property == MaxValueProperty ||
+                change.Property == TitleProperty    ||
+                change.Property == LabelProperty    ||
+                change.Property == ValueSuffixProperty)
+            {
+                DrawCircle();
+            }
+        }
+
         private void DrawCircle()
         {
             var canvas = this.FindControl<Canvas>("CircleCanvas");

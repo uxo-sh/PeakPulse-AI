@@ -37,7 +37,11 @@ namespace ui_dashboard.Views
             var apiData = await Services.ApiService.Instance
                 .GetTrendsAsync(_domain);
             var data = apiData ?? DomainData.Get(_domain);
+            UpdateUIWithData(data);
+        }
 
+        private void UpdateUIWithData(DomainData data)
+        {
             Set<TextBlock>("TitleText",
                 t => t.Text = data.Title);
             Set<TextBlock>("SubtitleText",
@@ -68,42 +72,18 @@ namespace ui_dashboard.Views
 
             Set<LineChart>("MainLineChart", c =>
             {
-                c.DataPoints = data.Heights;
+                c.DataPoints = "0,0,0,0,0,0";
                 c.Badge      = data.ChartBadge;
                 c.ColorHex   = data.BarColor;
-                c.Title      = "Évolution — 6 derniers mois";
-            });
-
-            Set<CircleBar>("CircleScore", c =>
-            {
-                c.Value = double.TryParse(
-                    data.KpiScore.Replace("%", ""),
-                    out var v) ? v : 0;
-                c.ColorHex = "#4fc3f7";
-            });
-
-            Set<CircleBar>("CirclePrecision", c =>
-            {
-                c.Value = double.TryParse(
-                    data.KpiPrecision,
-                    out var v) ? v * 10 : 0;
-                c.ColorHex = "#4caf50";
-            });
-
-            Set<CircleBar>("CircleOpportunity", c =>
-            {
-                c.Value = double.TryParse(
-                    data.KpiOpportunities,
-                    out var v) ? v * 10 : 0;
-                c.ColorHex = "#ff6b6b";
+                c.Title      = "Évolution (Données Statiques)";
             });
 
             Set<BarChart>("MainChart", c =>
             {
-                c.Title    = "Évolution — 6 derniers mois";
+                c.Title    = "Distribution (Données Statiques)";
                 c.Badge    = data.ChartBadge;
                 c.BarColor = data.BarColor;
-                c.Heights  = data.Heights;
+                c.Heights  = "0,0,0,0,0,0";
             });
 
             Set<TextBlock>("OpportunityBadge",
@@ -116,6 +96,7 @@ namespace ui_dashboard.Views
 
             BuildTopGenres(data);
             BuildTrendRows(data);
+            BuildWatchlistRows(data);
         }
 
         private void OnSearchChanged(object? sender,
@@ -198,7 +179,7 @@ namespace ui_dashboard.Views
             }
         }
 
-        private void OnAnalyzeClick(object? sender,
+        private async void OnAnalyzeClick(object? sender,
             Avalonia.Interactivity.RoutedEventArgs e)
         {
             var searchBox = this.FindControl<TextBox>("SearchBox");
@@ -207,8 +188,25 @@ namespace ui_dashboard.Views
             if (string.IsNullOrWhiteSpace(query))
             {
                 ShowNotification(
-                    "⚠️ Entrez un genre ou une tendance à analyser",
-                    "#ff9800");
+                    "Analyse complète en cours... (ML Pipeline)",
+                    "#7c4dff");
+
+                var data = await Services.ApiService.Instance.AnalyzeAsync(_domain);
+                if (data != null)
+                {
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    {
+                        UpdateUIWithData(data);
+                        ShowNotification("✅ Analyse terminée avec succès", "#4caf50");
+                    });
+                }
+                else
+                {
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    {
+                        ShowNotification("⚠️ Erreur lors de l'analyse ML", "#ff9800");
+                    });
+                }
                 return;
             }
 
@@ -377,6 +375,44 @@ namespace ui_dashboard.Views
                     Badge       = g.Badge,
                     ColorHex    = g.ColorHex,
                     IsAlternate = g.IsAlternate
+                };
+                panel.Children.Add(row);
+            }
+        }
+
+        private void BuildWatchlistRows(DomainData data)
+        {
+            var section = this.FindControl<Border>("WatchlistSection");
+            var panel = this.FindControl<StackPanel>("WatchlistRowsPanel");
+            if (panel == null) return;
+            panel.Children.Clear();
+
+            if (data.Watchlist == null || data.Watchlist.Length == 0)
+            {
+                if (section != null) section.IsVisible = false;
+                return;
+            }
+
+            if (section != null) section.IsVisible = true;
+
+            // Dynamic title based on domain
+            Set<TextBlock>("WatchlistTitle", t =>
+                t.Text = _domain == "movies"
+                    ? "\U0001f525 Films qui vont exploser"
+                    : "\U0001f525 Jeux qui vont exploser");
+            Set<TextBlock>("WatchlistBadge", t =>
+                t.Text = $"{data.Watchlist.Length} détectés");
+
+            foreach (var w in data.Watchlist)
+            {
+                var row = new TrendRow
+                {
+                    ItemName    = w.Name,
+                    Score       = w.Score,
+                    TrendLabel  = w.TrendLabel,
+                    Badge       = w.Badge,
+                    ColorHex    = w.ColorHex,
+                    IsAlternate = w.IsAlternate
                 };
                 panel.Children.Add(row);
             }

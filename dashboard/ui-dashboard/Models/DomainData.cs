@@ -25,6 +25,7 @@ namespace ui_dashboard.Models
         public string IaRecommendation { get; set; } = "";
         public string OpportunityCount { get; set; } = "";
         public GenreItem[] Genres { get; set; } = [];
+        public GenreItem[] Watchlist { get; set; } = [];
 
         public static DomainData Get(string domain) => domain switch
         {
@@ -32,11 +33,11 @@ namespace ui_dashboard.Models
             {
                 Title = "Jeux vidéo — Tendances",
                 Subtitle = "Steam · SteamDB · SteamCharts",
-                KpiGenres = "24", KpiScore = "78%",
-                KpiOpportunities = "7", KpiPrecision = "9.2",
+                KpiGenres = "87%", KpiScore = "70%",
+                KpiOpportunities = "78%", KpiPrecision = "8.4",
                 ChartBadge = "Steam · Live",
                 BarColor = "#4fc3f7",
-                Heights = "60,75,90,85,100,115",
+                Heights = "0,0,0,0,0,0",
                 OpportunityCount = "7 nouvelles",
                 IaRecommendation = "Roguelike et Open World en forte hausse sur Steam. Fenêtre optimale : 2 à 6 semaines. Engagement joueur +23% ce mois.",
                 Genres = new[]
@@ -51,11 +52,11 @@ namespace ui_dashboard.Models
             {
                 Title = "Cinéma — Tendances",
                 Subtitle = "TMDb · IMDb · Métriques sociales",
-                KpiGenres = "18", KpiScore = "81%",
-                KpiOpportunities = "5", KpiPrecision = "8.9",
+                KpiGenres = "72%", KpiScore = "46%",
+                KpiOpportunities = "56%", KpiPrecision = "9.4",
                 ChartBadge = "TMDb · Live",
                 BarColor = "#7c4dff",
-                Heights = "55,70,80,95,100,112",
+                Heights = "0,0,0,0,0,0",
                 OpportunityCount = "5 nouvelles",
                 IaRecommendation = "Thrillers psychologiques et animation adulte en forte croissance. Fenêtre optimale : 1 à 3 mois.",
                 Genres = new[]
@@ -64,25 +65,6 @@ namespace ui_dashboard.Models
                     new GenreItem { Name="Animation Adulte", Score="84%", TrendLabel="↑ En hausse", Badge="Lancer maintenant", ColorHex="#4fc3f7", IsAlternate=false, BarWidth=198 },
                     new GenreItem { Name="Sci-Fi Indie", Score="76%", TrendLabel="→ Stable", Badge="Surveiller", ColorHex="#ff6b6b", IsAlternate=true, BarWidth=178 },
                     new GenreItem { Name="Documentaire", Score="68%", TrendLabel="↗ Émergent", Badge="En émergence", ColorHex="#4caf50", IsAlternate=false, BarWidth=158 },
-                }
-            },
-            "music" => new DomainData
-            {
-                Title = "Musique — Tendances",
-                Subtitle = "Spotify · Apple Music · YouTube",
-                KpiGenres = "31", KpiScore = "74%",
-                KpiOpportunities = "9", KpiPrecision = "8.7",
-                ChartBadge = "Spotify · Live",
-                BarColor = "#ff6b6b",
-                Heights = "50,65,80,95,105,118",
-                OpportunityCount = "9 nouvelles",
-                IaRecommendation = "Afrobeats et Hyperpop dominent les charts. Fort engagement TikTok. Fenêtre optimale : 3 à 8 semaines.",
-                Genres = new[]
-                {
-                    new GenreItem { Name="Afrobeats", Score="91%", TrendLabel="↑ En hausse", Badge="Lancer maintenant", ColorHex="#ff6b6b", IsAlternate=true, BarWidth=215 },
-                    new GenreItem { Name="Hyperpop", Score="83%", TrendLabel="↑ En hausse", Badge="Lancer maintenant", ColorHex="#7c4dff", IsAlternate=false, BarWidth=195 },
-                    new GenreItem { Name="Indie Folk", Score="76%", TrendLabel="→ Stable", Badge="Surveiller", ColorHex="#4fc3f7", IsAlternate=true, BarWidth=178 },
-                    new GenreItem { Name="Lo-fi Hip Hop", Score="68%", TrendLabel="↗ Émergent", Badge="En émergence", ColorHex="#4caf50", IsAlternate=false, BarWidth=158 },
                 }
             },
             _ => new DomainData()
