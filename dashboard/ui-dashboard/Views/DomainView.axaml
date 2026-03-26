@@ -95,11 +95,12 @@
                         <material:MaterialIcon Kind="ChartLine"
                             Width="16" Height="16"
                             Foreground="White" />
-                        <TextBlock Text="Analyser"
+                        <TextBlock Name="BtnAnalyzeText" Text="Analyser"
                             Foreground="White"
                             FontSize="12" FontWeight="Bold" />
                     </StackPanel>
                 </Button>
+
 
             </Grid>
 
@@ -108,18 +109,18 @@
 
             <!-- KPI Cards -->
             <Grid ColumnDefinitions="*,*,*,*" Margin="0,0,0,24">
-                <c:KpiCard Grid.Column="0" Classes="fadeIn" Name="KpiGenres"
-                    Margin="0,0,8,0" Label="DÉTECTÉS"
-                    Trend="↑" SubLabel="ce mois"
-                    ColorHex="#4fc3f7" IconKind="ChartBar" />
-                <c:KpiCard Grid.Column="1" Classes="fadeIn1" Name="KpiScore"
-                    Margin="4,0" Label="SCORE MOYEN"
-                    Trend="↑" SubLabel="vs semaine"
-                    ColorHex="#7c4dff" IconKind="StarCircle" />
-                <c:KpiCard Grid.Column="2" Classes="fadeIn2" Name="KpiOpportunities"
-                    Margin="4,0" Label="OPPORTUNITÉS"
-                    Trend="↑" SubLabel="nouvelles"
-                    ColorHex="#ff6b6b" IconKind="Lightbulb" />
+                <c:KpiCard Grid.Column="0" Classes="fadeIn" Name="KpiRecall"
+                    Margin="0,0,8,0" Label="RECALL"
+                    Trend="↑" SubLabel="sensibilité"
+                    ColorHex="#4fc3f7" IconKind="Target" />
+                <c:KpiCard Grid.Column="1" Classes="fadeIn1" Name="KpiF1"
+                    Margin="4,0" Label="F1 SCORE"
+                    Trend="↑" SubLabel="équilibre"
+                    ColorHex="#7c4dff" IconKind="ScaleBalance" />
+                <c:KpiCard Grid.Column="2" Classes="fadeIn2" Name="KpiAuc"
+                    Margin="4,0" Label="ROC AUC"
+                    Trend="↑" SubLabel="séparabilité"
+                    ColorHex="#ff6b6b" IconKind="ChartLineVariant" />
                 <c:KpiCard Grid.Column="3" Classes="fadeIn3" Name="KpiPrecision"
                     Margin="8,0,0,0" Label="PRÉCISION IA"
                     Trend="sur 10" SubLabel="RandomForest"
@@ -135,7 +136,7 @@
                 ColorHex="#4fc3f7"
                 DataPoints="60,75,90,85,100,115" />
 
-            <!-- Circle bars -->
+            <!-- Circle bars
             <Grid ColumnDefinitions="*,*,*" Margin="0,0,0,24">
                 <c:CircleBar Grid.Column="0" Classes="fadeIn1" Name="CircleScore"
                     Margin="0,0,8,0"
@@ -155,8 +156,7 @@
                     Value="70" MaxValue="100"
                     ColorHex="#ff6b6b"
                     Label="fenêtre optimale" />
-            </Grid>
-
+            </Grid> -->
             <!-- Bar chart + Top genres -->
             <Grid ColumnDefinitions="*,300" Margin="0,0,0,24">
                 <c:BarChart Grid.Column="0" Classes="fadeIn3" Name="MainChart"
@@ -171,7 +171,7 @@
                             Margin="0,0,0,20">
                             <material:MaterialIcon Kind="TrophyVariant"
                                 Width="16" Height="16"
-                                Foreground="{DynamicResource AccentBlue}" />
+                                Foreground="{DynamicResource BadgeYellow}" />
                             <TextBlock Text="Top Genres"
                                 Foreground="{DynamicResource TextPrimary}"
                                 FontSize="14" FontWeight="Bold" />
@@ -181,45 +181,47 @@
                 </Border>
             </Grid>
 
-            <!-- Tableau -->
-            <Border Background="{DynamicResource CardBg}"
-                CornerRadius="12" Padding="24"
-                Margin="0,0,0,24"
-                BorderBrush="{DynamicResource BorderColor}"
-                BorderThickness="1">
+            <!-- Top 10 : Genres émergents -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="24" Margin="0,0,0,24" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="Top 10 : Genres émergents" Foreground="{DynamicResource TextPrimary}" FontSize="14" FontWeight="Bold" Margin="0,0,0,16"/>
+                    <StackPanel Name="EmergentGenresPanel" />
+                </StackPanel>
+            </Border>
+
+            <!-- Top 5 : Par probabilité moyenne -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="24" Margin="0,0,0,24" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="Top 5 : Par probabilité moyenne" Foreground="{DynamicResource TextPrimary}" FontSize="14" FontWeight="Bold" Margin="0,0,0,16"/>
+                    <StackPanel Name="MeanProbaGenresPanel" />
+                </StackPanel>
+            </Border>
+
+            <!-- Top 5 : Par % prédit tendance -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="24" Margin="0,0,0,24" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="Top 5 : Par % prédit tendance" Foreground="{DynamicResource TextPrimary}" FontSize="14" FontWeight="Bold" Margin="0,0,0,16"/>
+                    <StackPanel Name="TrendPercentGenresPanel" />
+                </StackPanel>
+            </Border>
+
+            <!-- Ceux qui vont exploser -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="24" Margin="0,0,0,24" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1">
                 <StackPanel>
                     <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
-                        <StackPanel Grid.Column="0"
-                            Orientation="Horizontal" Spacing="8">
-                            <material:MaterialIcon Kind="TableLarge"
-                                Width="16" Height="16"
-                                Foreground="{DynamicResource TextPrimary}" />
-                            <TextBlock Text="Opportunités détectées"
-                                Foreground="{DynamicResource TextPrimary}"
-                                FontSize="14" FontWeight="Bold" />
-                        </StackPanel>
-                        <Border Grid.Column="1" Background="#1a3a1a"
-                            CornerRadius="6" Padding="10,4">
-                            <TextBlock Name="OpportunityBadge"
-                                Foreground="#4caf50" FontSize="11" />
+                        <TextBlock Grid.Column="0" Text="Ceux qui vont exploser" Foreground="{DynamicResource TextPrimary}" FontSize="14" FontWeight="Bold" />
+                        <Border Grid.Column="1" Background="#1a3a1a" CornerRadius="6" Padding="10,4">
+                            <TextBlock Name="OpportunityBadge" Foreground="#4caf50" FontSize="11" />
                         </Border>
                     </Grid>
-                    <Grid ColumnDefinitions="*,100,120,160"
-                        Margin="16,0,0,8">
-                        <TextBlock Grid.Column="0" Text="Genre"
-                            Foreground="{DynamicResource TextMuted}"
-                            FontSize="11" />
-                        <TextBlock Grid.Column="1" Text="Score"
-                            Foreground="{DynamicResource TextMuted}"
-                            FontSize="11" />
-                        <TextBlock Grid.Column="2" Text="Tendance"
-                            Foreground="{DynamicResource TextMuted}"
-                            FontSize="11" />
-                        <TextBlock Grid.Column="3" Text="Recommandation"
-                            Foreground="{DynamicResource TextMuted}"
-                            FontSize="11" />
+                    <!-- En-têtes pour les détails (Games / Movies) -->
+                    <Grid ColumnDefinitions="*,90,200,120" Margin="0,0,0,8">
+                        <TextBlock Grid.Column="0" Text="Titre" Foreground="{DynamicResource TextMuted}" FontSize="11" />
+                        <TextBlock Grid.Column="1" Name="Header1" Text="Score" Foreground="{DynamicResource TextMuted}" FontSize="11" />
+                        <TextBlock Grid.Column="2" Name="Header2" Text="Proba" Foreground="{DynamicResource TextMuted}" FontSize="11" />
+                        <TextBlock Grid.Column="3" Name="Header3" Text="Budget" Foreground="{DynamicResource TextMuted}" FontSize="11" />
                     </Grid>
-                    <StackPanel Name="TrendRowsPanel" />
+                    <StackPanel Name="ExplodingItemsPanel" />
                 </StackPanel>
             </Border>
 
@@ -235,7 +237,7 @@
                         Margin="0,0,16,0" Width="44" Height="44">
                         <material:MaterialIcon Kind="Robot"
                             Width="24" Height="24"
-                            Foreground="{DynamicResource AccentBlue}"
+                            Foreground="{DynamicResource BadgeYellow}"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center" />
                     </Border>

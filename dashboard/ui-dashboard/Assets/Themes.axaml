@@ -20,6 +20,8 @@
             <SolidColorBrush x:Key="BadgeOrangeFg" Color="#ff9800" />
             <SolidColorBrush x:Key="BadgeBlueBg" Color="#1a2744" />
             <SolidColorBrush x:Key="BadgeBlueFg" Color="#4fc3f7" />
+            <SolidColorBrush x:Key="BadgeYellow" Color="rgba(219, 199, 21, 1)" />
+            
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Light">

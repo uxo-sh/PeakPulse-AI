@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
     x:Class="ui_dashboard.Controls.TrendRow">
 
     <Border Name="RowBorder" CornerRadius="8"
@@ -19,7 +20,10 @@
             <Border Grid.Column="3" Name="BadgeBorder"
                 CornerRadius="6" Padding="8,3"
                 HorizontalAlignment="Left">
-                <TextBlock Name="BadgeText" FontSize="11" />
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <StackPanel Name="IconsPanel" Orientation="Horizontal" Spacing="2" />
+                    <TextBlock Name="BadgeText" FontSize="11" VerticalAlignment="Center" />
+                </StackPanel>
             </Border>
         </Grid>
     </Border>

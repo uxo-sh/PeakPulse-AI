@@ -1,7 +1,4 @@
-"""
-Module de nettoyage des données - Traite les conversions de type, parsing JSON, 
-gestion des valeurs manquantes et validations de base.
-"""
+# Nettoyage
 
 import pandas as pd
 import numpy as np
@@ -58,16 +55,7 @@ def calculate_days_since_release(date_series):
 
 
 def create_genre_flags(genres_list, popular_genres):
-    """
-    Crée des colonnes binaires pour chaque genre populaire.
-    
-    Args:
-        genres_list: Liste de genres pour un élément
-        popular_genres: Liste des genres à créer des flags
-    
-    Returns:
-        Dictionnaire {genre: flag_booléen}
-    """
+
     flags = {}
     for genre in popular_genres:
         flags[f'has_{genre.lower().replace(" ", "_")}'] = (
@@ -77,16 +65,7 @@ def create_genre_flags(genres_list, popular_genres):
 
 
 def create_tag_flags(tags_list, popular_tags):
-    """
-    Crée des colonnes binaires pour chaque tag populaire.
-    
-    Args:
-        tags_list: Liste de tags pour un jeu
-        popular_tags: Liste des tags à créer des flags
-    
-    Returns:
-        Dictionnaire {tag: flag_booléen}
-    """
+
     flags = {}
     for tag in popular_tags:
         flags[f'has_{tag.lower().replace(" ", "_")}'] = (
@@ -96,13 +75,7 @@ def create_tag_flags(tags_list, popular_tags):
 
 
 def handle_missing_values_columns(df, columns_config):
-    """
-    Gère les valeurs manquantes selon la configuration.
-    
-    Args:
-        df: DataFrame
-        columns_config: Dict {column: fill_value}
-    """
+# valeur manquante
     for col, fill_val in columns_config.items():
         if col in df.columns:
             df[col] = df[col].fillna(fill_val)

@@ -16,6 +16,16 @@
             <!-- Logo -->
             <StackPanel HorizontalAlignment="Center"
                 Margin="0,0,0,40">
+                <!-- Logo Image -->
+                <Border Width="90" Height="90"
+                    CornerRadius="45"
+                    ClipToBounds="True"
+                    HorizontalAlignment="Center"
+                    Margin="0,0,0,16">
+                    <Image Source="/Assets/logo.jpg"
+                        Width="90" Height="90"
+                        Stretch="UniformToFill" />
+                </Border>
                 <StackPanel Orientation="Horizontal" Spacing="10"
                     HorizontalAlignment="Center">
                     <material:MaterialIcon Kind="TrendingUp"

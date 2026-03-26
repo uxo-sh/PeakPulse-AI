@@ -127,26 +127,80 @@ namespace ui_dashboard.Controls
             }
 
             if (this.FindControl<Border>("BadgeBorder") is Border badge
-                && this.FindControl<TextBlock>("BadgeText")
-                    is TextBlock badgeTxt)
+                && this.FindControl<TextBlock>("BadgeText") is TextBlock badgeTxt
+                && this.FindControl<StackPanel>("IconsPanel") is StackPanel iconsPanel)
             {
-                badgeTxt.Text = Badge;
+                iconsPanel.Children.Clear();
+                string actualBadge = Badge ?? "";
+                int iconCount = 0;
+                Material.Icons.MaterialIconKind iconKind = Material.Icons.MaterialIconKind.Star;
 
-                if (Badge.Contains("maintenant"))
+                if (actualBadge == "🔥") 
+                {
+                   iconCount = 1;
+                   iconKind = Material.Icons.MaterialIconKind.Star;
+                   actualBadge = "";
+                }
+                else if (actualBadge == "🚀")
+                {
+                   iconCount = 1;
+                   iconKind = Material.Icons.MaterialIconKind.ArrowUpBold;
+                   actualBadge = "";
+                }
+                else if (actualBadge.StartsWith("STAR:"))
+                {
+                    var parts = actualBadge.Split('|');
+                    if (int.TryParse(parts[0].Substring(5), out int c)) iconCount = c;
+                    iconKind = Material.Icons.MaterialIconKind.Star;
+                    actualBadge = parts.Length > 1 ? parts[1] : "";
+                }
+                else if (actualBadge.StartsWith("ARROW:"))
+                {
+                    var parts = actualBadge.Split('|');
+                    if (int.TryParse(parts[0].Substring(6), out int c)) iconCount = c;
+                    iconKind = Material.Icons.MaterialIconKind.ArrowUpBold;
+                    actualBadge = parts.Length > 1 ? parts[1] : "";
+                }
+
+                IBrush fgBrush;
+                if (actualBadge.Contains("maintenant") || iconKind == Material.Icons.MaterialIconKind.ArrowUpBold)
                 {
                     badge.Background = GetBrush("BadgeGreenBg");
-                    badgeTxt.Foreground = GetBrush("BadgeGreenFg");
+                    fgBrush = GetBrush("BadgeGreenFg");
                 }
-                else if (Badge.Contains("Surveiller"))
+                else if (actualBadge.Contains("Surveiller"))
                 {
                     badge.Background = GetBrush("BadgeOrangeBg");
-                    badgeTxt.Foreground = GetBrush("BadgeOrangeFg");
+                    fgBrush = GetBrush("BadgeOrangeFg");
                 }
                 else
                 {
                     badge.Background = GetBrush("BadgeBlueBg");
-                    badgeTxt.Foreground = GetBrush("BadgeBlueFg");
+                    fgBrush = GetBrush("BadgeBlueFg");
                 }
+
+                badgeTxt.Foreground = fgBrush;
+                badgeTxt.Text = actualBadge;
+                badgeTxt.IsVisible = !string.IsNullOrEmpty(actualBadge) || iconCount == 0;
+
+                for (int i = 0; i < iconCount; i++)
+                {
+                    IBrush iconBrush = fgBrush;
+                    if (iconKind == Material.Icons.MaterialIconKind.Star)
+                    {
+                        iconBrush = GetBrush("BadgeYellow");
+                    }
+
+                    var icon = new Material.Icons.Avalonia.MaterialIcon
+                    {
+                        Kind = iconKind,
+                        Width = 12,
+                        Height = 12,
+                        Foreground = iconBrush
+                    };
+                    iconsPanel.Children.Add(icon);
+                }
+                iconsPanel.IsVisible = iconCount > 0;
             }
         }
     }

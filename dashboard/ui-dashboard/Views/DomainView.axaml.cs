@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -26,18 +27,16 @@ namespace ui_dashboard.Views
             Avalonia.Interactivity.RoutedEventArgs e)
         {
             base.OnLoaded(e);
-            LoadData();
+            // Charger les données initialement à 0
+            var emptyData = DomainData.GetEmpty(_domain);
+            LoadData(emptyData);
             var searchBox = this.FindControl<TextBox>("SearchBox");
             if (searchBox != null)
                 searchBox.TextChanged += OnSearchChanged;
         }
 
-        private async void LoadData()
+        private void LoadData(DomainData data)
         {
-            var apiData = await Services.ApiService.Instance
-                .GetTrendsAsync(_domain);
-            var data = apiData ?? DomainData.Get(_domain);
-
             Set<TextBlock>("TitleText",
                 t => t.Text = data.Title);
             Set<TextBlock>("SubtitleText",
@@ -50,34 +49,34 @@ namespace ui_dashboard.Views
             {
                 i.Kind = _domain switch
                 {
-                    "games"  => MaterialIconKind.Gamepad,
+                    "games" => MaterialIconKind.Gamepad,
                     "movies" => MaterialIconKind.Movie,
-                    "music"  => MaterialIconKind.Music,
-                    _        => MaterialIconKind.TrendingUp
+                    "music" => MaterialIconKind.Music,
+                    _ => MaterialIconKind.TrendingUp
                 };
             });
 
-            Set<KpiCard>("KpiGenres",
-                k => k.Value = data.KpiGenres);
-            Set<KpiCard>("KpiScore",
-                k => k.Value = data.KpiScore);
-            Set<KpiCard>("KpiOpportunities",
-                k => k.Value = data.KpiOpportunities);
+            Set<KpiCard>("KpiRecall",
+                k => k.Value = data.KpiRecall);
+            Set<KpiCard>("KpiF1",
+                k => k.Value = data.KpiF1);
+            Set<KpiCard>("KpiAuc",
+                k => k.Value = data.KpiAuc);
             Set<KpiCard>("KpiPrecision",
                 k => k.Value = data.KpiPrecision);
 
             Set<LineChart>("MainLineChart", c =>
             {
                 c.DataPoints = data.Heights;
-                c.Badge      = data.ChartBadge;
-                c.ColorHex   = data.BarColor;
-                c.Title      = "Évolution — 6 derniers mois";
+                c.Badge = data.ChartBadge;
+                c.ColorHex = data.BarColor;
+                c.Title = "Évolution — 6 derniers mois";
             });
 
             Set<CircleBar>("CircleScore", c =>
             {
                 c.Value = double.TryParse(
-                    data.KpiScore.Replace("%", ""),
+                    data.KpiF1.Replace("%", ""),
                     out var v) ? v : 0;
                 c.ColorHex = "#4fc3f7";
             });
@@ -93,17 +92,17 @@ namespace ui_dashboard.Views
             Set<CircleBar>("CircleOpportunity", c =>
             {
                 c.Value = double.TryParse(
-                    data.KpiOpportunities,
+                    data.KpiAuc,
                     out var v) ? v * 10 : 0;
                 c.ColorHex = "#ff6b6b";
             });
 
             Set<BarChart>("MainChart", c =>
             {
-                c.Title    = "Évolution — 6 derniers mois";
-                c.Badge    = data.ChartBadge;
+                c.Title = "Évolution — 6 derniers mois";
+                c.Badge = data.ChartBadge;
                 c.BarColor = data.BarColor;
-                c.Heights  = data.Heights;
+                c.Heights = data.Heights;
             });
 
             Set<TextBlock>("OpportunityBadge",
@@ -114,8 +113,15 @@ namespace ui_dashboard.Views
             Set<TextBlock>("IaText",
                 t => t.Text = data.IaRecommendation);
 
-            BuildTopGenres(data);
-            BuildTrendRows(data);
+            Set<TextBlock>("Header1", t => t.Text = _domain == "games" ? "Proba" : "Score");
+            Set<TextBlock>("Header2", t => t.Text = _domain == "games" ? "Genre" : "Proba");
+            Set<TextBlock>("Header3", t => t.Text = _domain == "games" ? "Prix" : "Budget");
+
+            BuildPanel("EmergentGenresPanel", data.EmergentGenres);
+            BuildPanel("MeanProbaGenresPanel", data.MeanProbaGenres);
+            BuildPanel("TrendPercentGenresPanel", data.TrendPercentGenres);
+            BuildPanel("ExplodingItemsPanel", data.ExplodingItems);
+            BuildTopGenres(data.EmergentGenres);
         }
 
         private void OnSearchChanged(object? sender,
@@ -124,17 +130,24 @@ namespace ui_dashboard.Views
             var searchBox = sender as TextBox;
             var query = searchBox?.Text?.ToLower() ?? "";
 
-            var panel = this.FindControl<StackPanel>(
-                "TrendRowsPanel");
-            if (panel == null) return;
+            var panels = new[] {
+                this.FindControl<StackPanel>("EmergentGenresPanel"),
+                this.FindControl<StackPanel>("MeanProbaGenresPanel"),
+                this.FindControl<StackPanel>("TrendPercentGenresPanel"),
+                this.FindControl<StackPanel>("ExplodingItemsPanel")
+            };
 
-            foreach (var child in panel.Children)
+            foreach (var panel in panels)
             {
-                if (child is not Controls.TrendRow row) continue;
-                row.IsVisible = string.IsNullOrWhiteSpace(query)
-                    || row.ItemName.ToLower().Contains(query)
-                    || row.TrendLabel.ToLower().Contains(query)
-                    || row.Badge.ToLower().Contains(query);
+                if (panel == null) continue;
+                foreach (var child in panel.Children)
+                {
+                    if (child is not Controls.TrendRow row) continue;
+                    row.IsVisible = string.IsNullOrWhiteSpace(query)
+                        || row.ItemName.ToLower().Contains(query)
+                        || row.TrendLabel.ToLower().Contains(query)
+                        || row.Badge.ToLower().Contains(query);
+                }
             }
         }
 
@@ -198,25 +211,26 @@ namespace ui_dashboard.Views
             }
         }
 
-        private void OnAnalyzeClick(object? sender,
+        private async void OnAnalyzeClick(object? sender,
             Avalonia.Interactivity.RoutedEventArgs e)
         {
-            var searchBox = this.FindControl<TextBox>("SearchBox");
-            var query = searchBox?.Text ?? "";
+            var btn = sender as Button;
+            var txt = this.FindControl<TextBlock>("BtnAnalyzeText");
+            if (btn != null) btn.IsEnabled = false;
+            if (txt != null) txt.Text = "En cours...";
 
-            if (string.IsNullOrWhiteSpace(query))
+            // Chargement ML en direct (3 secondes)
+            await System.Threading.Tasks.Task.Delay(3000);
+
+            var data = await Services.ApiService.Instance
+                .GetTrendsAsync(_domain);
+            if (data != null)
             {
-                ShowNotification(
-                    "⚠️ Entrez un genre ou une tendance à analyser",
-                    "#ff9800");
-                return;
+                LoadData(data);
             }
 
-            ShowNotification(
-                $"Analyse de '{query}' en cours...",
-                "#4fc3f7");
-
-            _ = AnalyzeQueryAsync(query);
+            if (btn != null) btn.IsEnabled = true;
+            if (txt != null) txt.Text = "Analyser";
         }
 
         private async Task AnalyzeQueryAsync(string query)
@@ -294,39 +308,59 @@ namespace ui_dashboard.Views
             });
         }
 
-        private void BuildTopGenres(DomainData data)
+        private void BuildPanel(string panelName, TrendItem[]? items)
         {
-            var panel = this.FindControl<StackPanel>(
-                "TopGenresPanel");
+            var panel = this.FindControl<StackPanel>(panelName);
             if (panel == null) return;
             panel.Children.Clear();
+            if (items == null) return;
 
-            foreach (var g in data.Genres)
+            foreach (var t in items)
             {
-                var sp = new StackPanel
+                var row = new Controls.TrendRow
                 {
-                    Margin = new Avalonia.Thickness(0, 0, 0, 16)
+                    ItemName = t.ItemName,
+                    Score = t.Score,
+                    TrendLabel = t.TrendLabel,
+                    Badge = t.Badge,
+                    ColorHex = t.ColorHex,
+                    IsAlternate = t.IsAlternate
                 };
+                panel.Children.Add(row);
+            }
+        }
 
+        private void BuildTopGenres(TrendItem[]? items)
+        {
+            var panel = this.FindControl<StackPanel>("TopGenresPanel");
+            if (panel == null) return;
+            panel.Children.Clear();
+            if (items == null || items.Length == 0) return;
+
+            // Afficher max 4 genres dans le panneau latéral
+            foreach (var g in items.Take(4))
+            {
+                double ratio = 0;
+                if (double.TryParse(g.TrendLabel?.Replace("%", ""), out var r))
+                    ratio = r;
+                int barW = 50 + (int)(ratio * 1.5);
+
+                var sp = new StackPanel { Margin = new Avalonia.Thickness(0, 0, 0, 16) };
                 var grid = new Grid();
-                grid.ColumnDefinitions.Add(
-                    new ColumnDefinition(GridLength.Star));
-                grid.ColumnDefinitions.Add(
-                    new ColumnDefinition(GridLength.Auto));
+                grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+                grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
                 grid.Margin = new Avalonia.Thickness(0, 0, 0, 6);
 
                 var nameText = new TextBlock
                 {
-                    Text = g.Name,
-                    Foreground = new SolidColorBrush(
-                        Avalonia.Media.Colors.White),
+                    Text = g.ItemName,
+                    Foreground = new SolidColorBrush(Avalonia.Media.Colors.White),
                     FontSize = 12
                 };
                 var scoreText = new TextBlock
                 {
                     Text = g.Score,
-                    Foreground = new SolidColorBrush(
-                        Avalonia.Media.Color.Parse(g.ColorHex)),
+                    Foreground = new SolidColorBrush(Avalonia.Media.Color.Parse(g.ColorHex)),
                     FontSize = 12,
                     FontWeight = FontWeight.Bold
                 };
@@ -338,47 +372,22 @@ namespace ui_dashboard.Views
                 var track = new Border
                 {
                     Height = 4,
-                    Background = new SolidColorBrush(
-                        Avalonia.Media.Color.Parse("#1e2d40")),
+                    Background = new SolidColorBrush(Avalonia.Media.Color.Parse("#1e2d40")),
                     CornerRadius = new Avalonia.CornerRadius(2)
                 };
                 var fill = new Border
                 {
-                    Width = g.BarWidth,
+                    Width = barW,
                     Height = 4,
-                    Background = new SolidColorBrush(
-                        Avalonia.Media.Color.Parse(g.ColorHex)),
+                    Background = new SolidColorBrush(Avalonia.Media.Color.Parse(g.ColorHex)),
                     CornerRadius = new Avalonia.CornerRadius(2),
-                    HorizontalAlignment =
-                        Avalonia.Layout.HorizontalAlignment.Left
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left
                 };
                 track.Child = fill;
 
                 sp.Children.Add(grid);
                 sp.Children.Add(track);
                 panel.Children.Add(sp);
-            }
-        }
-
-        private void BuildTrendRows(DomainData data)
-        {
-            var panel = this.FindControl<StackPanel>(
-                "TrendRowsPanel");
-            if (panel == null) return;
-            panel.Children.Clear();
-
-            foreach (var g in data.Genres)
-            {
-                var row = new TrendRow
-                {
-                    ItemName    = g.Name,
-                    Score       = g.Score,
-                    TrendLabel  = g.TrendLabel,
-                    Badge       = g.Badge,
-                    ColorHex    = g.ColorHex,
-                    IsAlternate = g.IsAlternate
-                };
-                panel.Children.Add(row);
             }
         }
 
